@@ -1,34 +1,53 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const fetch = require('node-fetch'); // Node 18+ fetch global
+const express = require("express");
+const bodyParser = require("body-parser");
+const fetch = require("node-fetch");
+require("dotenv").config();
+
 const app = express();
 app.use(bodyParser.json());
-app.use(express.static('.'));
+app.use(express.static(".")); // serve frontend HTML
 
-const VALID_PIN = "1234"; // cocok dengan secrets UPDATE_PIN
-const REPO = "kijangweb/probpair";
-const WORKFLOW_ID = "update-data.yml";
-const MAIN_BRANCH = "main";
-const GITHUB_PAT = process.env.GH_PAT; // simpan token di environment
+// --- Konfigurasi ---
+const PIN = "1234"; // PIN untuk akses update
+const GITHUB_TOKEN = process.env.GH_PAT; // simpan token di .env
+const REPO_OWNER = "kijangweb";
+const REPO_NAME = "probpair";
+const FILE_PATH = "data.json";
+const BRANCH = "main";
 
-app.post('/update-json', async (req,res)=>{
-  const {pin,datajson} = req.body;
-  if(pin !== VALID_PIN) return res.json({success:false,message:"PIN salah"});
-  try{
-    const r = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW_ID}/dispatches`,{
-      method:"POST",
-      headers:{
-        "Accept":"application/vnd.github+json",
-        "Authorization":`token ${GITHUB_PAT}`,
-        "Content-Type":"application/json"
-      },
-      body: JSON.stringify({ref: MAIN_BRANCH, inputs:{pin,datajson}})
+// --- Endpoint update JSON ---
+app.post("/update-json", async (req, res) => {
+  const { pin, jsonData } = req.body;
+
+  if(pin !== PIN) return res.status(403).json({ error: "PIN salah" });
+
+  try {
+    // Ambil SHA file di repo
+    const getRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`, {
+      headers: { Authorization: `token ${GITHUB_TOKEN}` }
     });
-    if(r.ok) res.json({success:true});
-    else res.json({success:false,message:await r.text()});
-  }catch(err){
-    res.json({success:false,message:err.message});
+    const getData = await getRes.json();
+    const sha = getData.sha;
+
+    // Commit perubahan
+    const commitRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+      method: "PUT",
+      headers: { Authorization: `token ${GITHUB_TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: `Update JSON via web`,
+        content: Buffer.from(JSON.stringify(jsonData, null, 2)).toString("base64"),
+        branch: BRANCH,
+        sha
+      })
+    });
+
+    const commitData = await commitRes.json();
+    res.json(commitData);
+
+  } catch(err){
+    console.error(err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.listen(3000,()=>console.log("Server siap di http://localhost:3000"));
+app.listen(3000, () => console.log("Server running at http://localhost:3000"));
