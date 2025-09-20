@@ -89,57 +89,26 @@ th{background:#2a2a2a;color:var(--accent-light);}
         <td id="cNotes"></td>
       </tr>
     </table>
-
-    <h3>Update / Import JSON</h3>
-    <textarea id="jsonInput" placeholder="Paste JSON di sini untuk update..."></textarea>
-    <input type="password" id="pinInput" placeholder="Masukkan PIN"/>
-    <button onclick="updateRepo()">🔄 Update Repo</button>
-
-    <button id="toggleJsonBtn" onclick="toggleJSON()">👁️ Show JSON</button>
-    <pre id="jsonOutput" style="display:none;"></pre>
-
-    <button onclick="copyJSON()">📋 Salin JSON</button>
-    <button onclick="copySingleLine()">📋 Salin Ringkas</button>
   </div>
 </div>
 
 <script>
-// --- Data awal (bisa diganti dari GitHub) ---
-let countdownTimer;
-let tradeData = {
-  "pair": "XAU/USD",
-  "spot": "3684.98",
-  "validUntil": "2025-09-20T16:00:00",
-  "bias": "Bullish (hati-hati di resistance 3700)",
-  "emaAlignment": "EMA 9 > 21 > 55 → tren naik kuat",
-  "levels": {
-    "supportIntraday": "3632–3645",
-    "supportKritis": "3600–3615",
-    "resistanceIntraday": "3685–3700",
-    "resistanceKuat": "3730–3750"
-  },
-  "quickTrade": {
-    "long": {"trigger":">3685","entry":"3690–3700","tp":"3730–3750","sl":"<3630"},
-    "short": {"trigger":"Rejection 3700–3710 / break <3630","entry":"~3630","tp":"3600–3615","sl":">3730"},
-    "sideways": {"range":"3630–3700","strategy":"Buy near support, Sell near resistance, TP seberang range, SL ±10-20 pip"}
-  },
-  "risk": "R:R minimal 1:2–1:3, hindari news besar, gunakan ATR H1",
-  "fundamental": {"sentiment":"Positif, didukung data inflasi melemah","risk":"Geopolitik & data NFP minggu ini","projection":"Potensi uji 3750 sebelum retrace"},
-  "conclusion": {"bias":"Bullish","strategy":"Buy on dip dekat support, TP di resistance","notes":"Hindari entry saat news high impact"}
-};
+// --- Config ---
+// Ganti URL JSON ini dengan path ke file JSON di repo GitHub Pages
+const jsonURL = 'tradeData.json';
 
-// --- Load JSON terbaru dari repo ---
-async function loadJSONFromRepo() {
-  try {
-    const res = await fetch("https://api.github.com/repos/kijangweb/probpair/contents/data.json?ref=main");
+let countdownTimer;
+
+// --- Ambil JSON dari repo GitHub ---
+async function fetchData(){
+  try{
+    const res = await fetch(jsonURL);
+    if(!res.ok) throw new Error("Gagal load JSON");
     const data = await res.json();
-    if(data.content){
-      const decoded = atob(data.content);
-      tradeData = JSON.parse(decoded);
-      updateUI();
-    }
-  } catch(err){
-    console.error("Gagal load JSON dari repo:", err);
+    return data;
+  }catch(e){
+    console.error(e);
+    return null;
   }
 }
 
@@ -163,10 +132,10 @@ function startCountdown(validUntil) {
 }
 
 // --- Update UI ---
-function updateUI(){
+function updateUI(tradeData){
   document.getElementById("pair").textContent = tradeData.pair;
   document.getElementById("spot").textContent = tradeData.spot;
-  document.getElementById("timestamp").textContent = getWIBTime();
+  document.getElementById("timestamp").textContent = new Date().toLocaleString();
   document.getElementById("bias").textContent = tradeData.bias;
   document.getElementById("ema").textContent = tradeData.emaAlignment;
   document.getElementById("sIntraday").textContent = tradeData.levels.supportIntraday;
@@ -183,76 +152,23 @@ function updateUI(){
   document.getElementById("cBias").textContent = tradeData.conclusion.bias;
   document.getElementById("cStrategy").textContent = tradeData.conclusion.strategy;
   document.getElementById("cNotes").textContent = tradeData.conclusion.notes;
-  document.getElementById("jsonOutput").textContent = JSON.stringify(tradeData,null,2);
   startCountdown(tradeData.validUntil);
 }
 
-// --- Utility ---
-function getWIBTime(){
-  const now=new Date();
-  const utc= now.getTime() + (now.getTimezoneOffset()*60000);
-  const wib= new Date(utc + (7*60*60000));
-  const yyyy=wib.getFullYear();
-  const mm=String(wib.getMonth()+1).padStart(2,'0');
-  const dd=String(wib.getDate()).padStart(2,'0');
-  const hh=String(wib.getHours()).padStart(2,'0');
-  const min=String(wib.getMinutes()).padStart(2,'0');
-  return `${yyyy}-${mm}-${dd} ${hh}:${min} WIB`;
-}
-
 // --- Copy functions ---
-function copyJSON(){navigator.clipboard.writeText(JSON.stringify(tradeData,null,2)).then(_=>alert("JSON disalin!"))}
-function copySingleLine(){
-  const singleLine = `${tradeData.pair} | Spot: ${tradeData.spot} | Bias: ${tradeData.bias} | EMA: ${tradeData.emaAlignment} | Levels: S${tradeData.levels.supportIntraday}/K${tradeData.levels.supportKritis} R${tradeData.levels.resistanceIntraday}/K${tradeData.levels.resistanceKuat} | Trade: ${tradeData.quickTrade.long.entry}`;
-  navigator.clipboard.writeText(singleLine).then(_=>alert("Info singkat berhasil disalin!"));
-}
 function copyLevels(){
-  const levels = `Support Intraday: ${tradeData.levels.supportIntraday}\nSupport Kritis: ${tradeData.levels.supportKritis}\nResistance Intraday: ${tradeData.levels.resistanceIntraday}\nResistance Kuat: ${tradeData.levels.resistanceKuat}`;
+  const levels = document.getElementById("sIntraday").textContent + "\n" +
+                 document.getElementById("sKritis").textContent + "\n" +
+                 document.getElementById("rIntraday").textContent + "\n" +
+                 document.getElementById("rKuat").textContent;
   navigator.clipboard.writeText(levels).then(_=>alert("Key levels berhasil disalin!"));
 }
-function toggleJSON(){
-  const out = document.getElementById('jsonOutput');
-  const btn = document.getElementById('toggleJsonBtn');
-  if(out.style.display==='none'){
-    out.style.display='block';
-    btn.textContent='🙈 Hide JSON';
-  }else{
-    out.style.display='none';
-    btn.textContent='👁️ Show JSON';
-  }
-}
 
-// --- Update repo via server lokal ---
-async function updateRepo(){
-  const jsonInput = document.getElementById('jsonInput').value;
-  const pin = document.getElementById('pinInput').value;
-  if(!jsonInput) return alert("Masukkan JSON dulu!");
-  if(!pin) return alert("Masukkan PIN dulu!");
-
-  try{
-    const parsed = JSON.parse(jsonInput);
-    const res = await fetch("/update-json", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({pin,jsonData:parsed})
-    });
-    const data = await res.json();
-    if(data.content){
-      alert("JSON berhasil di-update ke repo!");
-      tradeData = parsed;
-      updateUI();
-    }else{
-      alert("Gagal update repo: "+(data.message||"unknown error"));
-    }
-  }catch(e){
-    alert("JSON invalid! Periksa formatnya.");
-    console.error(e);
-  }
-}
-
-// --- Inisialisasi UI ---
-updateUI();
-loadJSONFromRepo();
+// --- Initialize ---
+(async ()=>{
+  const data = await fetchData();
+  if(data) updateUI(data);
+})();
 </script>
 </body>
 </html>
