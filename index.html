@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>XAU/USD Intraday 3EMA Strategy</title>
+<title>Intraday 3EMA Quick Decision Sheet</title>
 <style>
 :root{
   --primary-bg:#121212;
@@ -19,8 +19,8 @@ body{background:var(--primary-bg);color:var(--text);padding:20px;}
 .container{max-width:720px;margin:auto;}
 .card{background:var(--card-bg);border-radius:16px;padding:25px;margin-bottom:20px;box-shadow:0 8px 25px rgba(0,0,0,0.4);}
 h2{margin-bottom:5px;font-weight:600;color:var(--accent);}
-h3{margin:15px 0 8px;font-weight:500;color:var(--accent-light);}
 .subheader{color:#aaa;font-size:14px;margin-bottom:20px;}
+h3{margin:15px 0 8px;font-weight:500;color:var(--accent-light);}
 .levels{display:grid;grid-template-columns:1fr 1fr;gap:10px 15px;margin-bottom:15px;}
 .level{padding:10px 12px;border-radius:10px;display:flex;justify-content:space-between;font-weight:500;background:#2a2a2a;cursor:pointer;transition:.2s;user-select:text;}
 .level:hover{background:#3a3a3a;color:var(--accent);}
@@ -38,98 +38,66 @@ table{width:100%;border-collapse:collapse;margin-top:15px;}
 table,th,td{border:1px solid #444;}
 th,td{padding:10px;text-align:center;}
 th{background:#2a2a2a;color:var(--accent-light);}
+#notice{display:none;padding:10px 15px;margin-bottom:15px;border-radius:8px;font-weight:500;text-align:center;}
 </style>
 </head>
 <body>
 
 <div class="container">
+  <div id="notice"></div>
   <div class="card">
     <h2>Intraday 3EMA Quick Decision Sheet</h2>
     <p class="subheader">EMA 9 · EMA 21 · EMA 55 — Based Intraday Analysis</p>
 
-    <p><strong>Pair:</strong> <span id="pair">XAU/USD</span></p>
-    <p><strong>Spot Price:</strong> <span id="spot">3665.50</span></p>
-    <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
-    <p><strong>Berlaku:</strong> <span id="validRange"></span></p>
-    <p><strong>Countdown:</strong> <span id="countdown"></span></p>
+    <p><strong>Pair:</strong> <span id="pair">-</span></p>
+    <p><strong>Spot Price:</strong> <span id="spot">-</span></p>
+    <p><strong>Timestamp:</strong> <span id="timestamp">-</span></p>
+    <p><strong>Berlaku:</strong> <span id="validFrom"></span> → <span id="validUntil"></span></p>
+    <p><strong>Sisa waktu:</strong> <span id="countdown"></span></p>
 
-    <p><strong>Bias:</strong> <span id="bias">Bullish (hati-hati di resistance 3700)</span></p>
-    <p><strong>EMA Alignment:</strong> <span id="ema">EMA 9 > 21 > 55 → tren naik kuat</span></p>
+    <p><strong>Bias:</strong> <span id="bias">-</span></p>
+    <p><strong>EMA Alignment:</strong> <span id="ema">-</span></p>
 
     <h3>Level Kunci</h3>
     <div class="levels">
-      <div class="level">Support Intraday<span id="sIntraday">3630–3635</span></div>
-      <div class="level">Support Kritis<span id="sKritis">3600–3610</span></div>
-      <div class="level">Resistance Intraday<span id="rIntraday">3660–3670</span></div>
-      <div class="level">Resistance Kuat<span id="rKuat">3700–3720</span></div>
+      <div class="level">Support Intraday<span id="sIntraday">-</span></div>
+      <div class="level">Support Kritis<span id="sKritis">-</span></div>
+      <div class="level">Resistance Intraday<span id="rIntraday">-</span></div>
+      <div class="level">Resistance Kuat<span id="rKuat">-</span></div>
     </div>
     <button onclick="copyLevels()">📋 Salin Level</button>
 
     <h3>Quick Trade Triggers</h3>
-    <div class="trade long" id="tLong">Long: Trigger >3660, Entry 3670–3680, TP 3700–3720, SL <3630</div>
-    <div class="trade short" id="tShort">Short: Rejection 3660–3670 / break <3630, Entry ~3630, TP 3600–3610, SL >3680</div>
-    <div class="trade sideways" id="tSideways">Sideways/Range: 3630–3670, Buy near support, Sell near resistance, TP seberang range, SL ±10-20 pip</div>
+    <div class="trade long" id="tLong">-</div>
+    <div class="trade short" id="tShort">-</div>
+    <div class="trade sideways" id="tSideways">-</div>
 
-    <div class="risk" id="riskText"><strong>Risk Management:</strong> R:R minimal 1:2–1:3, hindari news besar, gunakan ATR H1</div>
+    <div class="risk" id="riskText">-</div>
 
     <h3>Fundamental Check</h3>
     <table>
+      <tr><th>Sentiment</th><th>Risk</th><th>Projection</th></tr>
       <tr>
-        <th>Sentiment</th>
-        <th>Risk</th>
-        <th>Projection</th>
-      </tr>
-      <tr>
-        <td id="sentiment">Positif, didukung data inflasi melemah</td>
-        <td id="risk">Geopolitik & data NFP minggu ini</td>
-        <td id="projection">Potensi uji 3700 sebelum retrace</td>
+        <td id="sentiment">-</td>
+        <td id="risk">-</td>
+        <td id="projection">-</td>
       </tr>
     </table>
 
     <h3>Kesimpulan</h3>
     <table>
+      <tr><th>Bias</th><th>Strategy</th><th>Notes</th></tr>
       <tr>
-        <th>Bias</th>
-        <th>Strategy</th>
-        <th>Notes</th>
-      </tr>
-      <tr>
-        <td id="cBias">Bullish</td>
-        <td id="cStrategy">Buy on dip dekat support, TP di resistance</td>
-        <td id="cNotes">Hindari entry saat news high impact</td>
+        <td id="cBias">-</td>
+        <td id="cStrategy">-</td>
+        <td id="cNotes">-</td>
       </tr>
     </table>
-
-    <h3>Update / Import JSON</h3>
-    <textarea id="jsonInput" placeholder="Paste JSON di sini untuk update..."></textarea>
-    <button onclick="importJSON()">🔄 Update Value</button>
-
-    <button id="toggleJsonBtn" onclick="toggleJSON()">👁️ Show JSON</button>
-    <pre id="jsonOutput" style="display:none;"></pre>
-
-    <button onclick="copyJSON()">📋 Salin JSON</button>
-    <button onclick="copySingleLine()">📋 Salin Ringkas</button>
   </div>
 </div>
 
 <script>
-let tradeData={
-  pair:"XAU/USD",
-  spot:"3665.50",
-  bias:"Bullish (hati-hati di resistance 3700)",
-  emaAlignment:"EMA 9 > 21 > 55 → tren naik kuat",
-  levels:{supportIntraday:"3630–3635",supportKritis:"3600–3610",resistanceIntraday:"3660–3670",resistanceKuat:"3700–3720"},
-  quickTrade:{
-    long:{trigger:">3660",entry:"3670–3680",tp:"3700–3720",sl:"<3630"},
-    short:{trigger:"Rejection 3660–3670 / break <3630",entry:"~3630",tp:"3600–3610",sl:">3680"},
-    sideways:{range:"3630–3670",strategy:"Buy near support, Sell near resistance, TP seberang range, SL ±10-20 pip"}
-  },
-  risk:"R:R minimal 1:2–1:3, hindari news besar, gunakan ATR H1",
-  fundamental:{sentiment:"Positif, didukung data inflasi melemah",risk:"Geopolitik & data NFP minggu ini",projection:"Potensi uji 3700 sebelum retrace"},
-  conclusion:{bias:"Bullish",strategy:"Buy on dip dekat support, TP di resistance",notes:"Hindari entry saat news high impact"},
-  validFrom:"",
-  validUntil:""
-};
+let tradeData={};
 
 function updateUI(){
   document.getElementById("pair").textContent=tradeData.pair;
@@ -151,10 +119,6 @@ function updateUI(){
   document.getElementById("cBias").textContent=tradeData.conclusion.bias;
   document.getElementById("cStrategy").textContent=tradeData.conclusion.strategy;
   document.getElementById("cNotes").textContent=tradeData.conclusion.notes;
-  document.getElementById("jsonOutput").textContent=JSON.stringify(tradeData,null,2);
-
-  // update validity
-  updateValidity();
 }
 
 function getWIBTime(){
@@ -169,84 +133,79 @@ function getWIBTime(){
   return `${yyyy}-${mm}-${dd} ${hh}:${min} WIB`;
 }
 
-function updateValidity(){
-  const now=new Date();
-  const utc= now.getTime() + (now.getTimezoneOffset()*60000);
-  const wibNow=new Date(utc + (7*60*60000));
-
-  const wibEnd=new Date(wibNow);
-  wibEnd.setHours(23,59,59,999);
-
-  tradeData.validFrom=wibNow.toLocaleString("id-ID",{timeZone:"Asia/Jakarta"});
-  tradeData.validUntil=wibEnd.toLocaleString("id-ID",{timeZone:"Asia/Jakarta"});
-
-  document.getElementById("validRange").textContent = `${tradeData.validFrom} → ${tradeData.validUntil}`;
-
-  function updateCountdown(){
-    const now=new Date();
-    const utc= now.getTime() + (now.getTimezoneOffset()*60000);
-    const wibNow=new Date(utc + (7*60*60000));
-    const distance=wibEnd-wibNow;
-
-    if(distance<=0){
-      document.getElementById("countdown").textContent="❌ Expired";
+// countdown
+function startCountdown(expiry){
+  function update(){
+    const now = new Date().getTime();
+    const end = new Date(expiry).getTime();
+    const diff = end - now;
+    if(diff <= 0){
+      document.getElementById("countdown").textContent = "Expired ❌";
       clearInterval(timer);
-    }else{
-      const hours=Math.floor(distance/(1000*60*60));
-      const minutes=Math.floor((distance%(1000*60*60))/(1000*60));
-      document.getElementById("countdown").textContent=`${hours}h ${minutes}m`;
+    } else {
+      const h = Math.floor(diff / (1000*60*60));
+      const m = Math.floor((diff % (1000*60*60)) / (1000*60));
+      const s = Math.floor((diff % (1000*60)) / 1000);
+      document.getElementById("countdown").textContent = `${h}h ${m}m ${s}s`;
     }
   }
-  updateCountdown();
-  const timer=setInterval(updateCountdown,60000);
+  update();
+  const timer = setInterval(update,1000);
 }
 
-updateUI();
-
-function copyJSON(){navigator.clipboard.writeText(JSON.stringify(tradeData,null,2)).then(_=>alert("JSON disalin!"))}
-function toggleJSON(){
-  const out=document.getElementById('jsonOutput');
-  const btn=document.getElementById('toggleJsonBtn');
-  if(out.style.display==='none'){out.style.display='block';btn.textContent='🙈 Hide JSON';}
-  else{out.style.display='none';btn.textContent='👁️ Show JSON';}
-}
-function importJSON(){
-  const input=document.getElementById("jsonInput").value;
-  if(!input) return alert("Masukkan JSON dulu!");
-  try{
-    const obj=JSON.parse(input);
-    tradeData=obj;
-    updateUI();
-    alert("Data berhasil diperbarui!");
-  }catch(e){
-    alert("JSON invalid! Periksa formatnya.");
+// notice banner
+function showNotice(type, message){
+  const notice = document.getElementById("notice");
+  notice.style.display = "block";
+  if(type === "warning"){
+    notice.style.background = "#ffcc00";
+    notice.style.color = "#000";
+    notice.textContent = `⏳ ${message}`;
+  } else if(type === "error"){
+    notice.style.background = "#ff4444";
+    notice.style.color = "#fff";
+    notice.textContent = `❌ ${message}`;
   }
 }
-function copyLevels(){
-  const sIntraday=document.getElementById("sIntraday").textContent;
-  const sKritis=document.getElementById("sKritis").textContent;
-  const rIntraday=document.getElementById("rIntraday").textContent;
-  const rKuat=document.getElementById("rKuat").textContent;
-  const text=`Support Intraday: ${sIntraday}\nSupport Kritis: ${sKritis}\nResistance Intraday: ${rIntraday}\nResistance Kuat: ${rKuat}`;
-  navigator.clipboard.writeText(text)
-    .then(()=> alert("Key levels berhasil disalin!"))
-    .catch(()=> alert("Gagal menyalin key levels."));
-}
-function copySingleLine(){
-  const pair=document.getElementById("pair").textContent;
-  const spot=document.getElementById("spot").textContent;
-  const bias=document.getElementById("bias").textContent;
-  const ema=document.getElementById("ema").textContent;
-  const sIntraday=document.getElementById("sIntraday").textContent;
-  const sKritis=document.getElementById("sKritis").textContent;
-  const rIntraday=document.getElementById("rIntraday").textContent;
-  const rKuat=document.getElementById("rKuat").textContent;
-  const tLong=document.getElementById("tLong").textContent;
 
-  const singleLine=`${pair} | Spot: ${spot} | Bias: ${bias} | EMA: ${ema} | Levels: S${sIntraday}/K${sKritis} R${rIntraday}/K${rKuat} | Trade: ${tLong}`;
-  navigator.clipboard.writeText(singleLine)
-    .then(()=> alert("Info singkat berhasil disalin!"))
-    .catch(()=> alert("Gagal menyalin info singkat."));
+// load data
+function loadData(url, isFallback=false){
+  return fetch(url)
+    .then(res => {
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    })
+    .then(data => {
+      tradeData = data;
+      updateUI();
+      document.getElementById("validFrom").textContent = new Date(data.validFrom).toLocaleString("id-ID");
+      document.getElementById("validUntil").textContent = new Date(data.validUntil).toLocaleString("id-ID");
+      startCountdown(data.validUntil);
+      if(isFallback){ showNotice("warning", "Data intraday expired. Menampilkan arsip terakhir."); }
+    });
+}
+
+// coba load utama
+loadData("data.json")
+  .then(() => {
+    const now = new Date().getTime();
+    const expiry = new Date(tradeData.validUntil).getTime();
+    if(now > expiry){
+      const dateStr = tradeData.validFrom.split("T")[0];
+      loadData(`data-${dateStr}.json`, true)
+        .catch(() => showNotice("error", "Data expired & arsip tidak tersedia."));
+    }
+  })
+  .catch(() => showNotice("error", "Gagal memuat data.json."));
+
+// copy key levels
+function copyLevels(){
+  const sIntraday = document.getElementById("sIntraday").textContent;
+  const sKritis = document.getElementById("sKritis").textContent;
+  const rIntraday = document.getElementById("rIntraday").textContent;
+  const rKuat = document.getElementById("rKuat").textContent;
+  const text = `Support Intraday: ${sIntraday}\nSupport Kritis: ${sKritis}\nResistance Intraday: ${rIntraday}\nResistance Kuat: ${rKuat}`;
+  navigator.clipboard.writeText(text).then(()=> alert("Key levels berhasil disalin!"));
 }
 </script>
 
