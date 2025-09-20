@@ -14,8 +14,7 @@ jobs:
   update-json:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
       - name: Validate PIN
         if: ${{ github.event.inputs.pin != secrets.UPDATE_PIN }}
@@ -24,8 +23,7 @@ jobs:
           exit 1
 
       - name: Save data.json
-        run: |
-          echo "${{ github.event.inputs.datajson }}" > data.json
+        run: echo "${{ github.event.inputs.datajson }}" > data.json
 
       - name: Commit & Push
         run: |
