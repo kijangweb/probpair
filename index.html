@@ -65,6 +65,7 @@ th{background:#2a2a2a;color:var(--accent-light);}
       <div class="level">Resistance Intraday<span id="rIntraday">-</span></div>
       <div class="level">Resistance Kuat<span id="rKuat">-</span></div>
     </div>
+    <button onclick="copyLevels()">📋 Salin Level</button>
 
     <h3>Quick Trade Triggers</h3>
     <div class="trade long" id="tLong">-</div>
@@ -92,10 +93,15 @@ th{background:#2a2a2a;color:var(--accent-light);}
         <td id="cNotes">-</td>
       </tr>
     </table>
+
+    <h3>Utility</h3>
+    <button onclick="copyJSON()">📋 Salin JSON</button>
+    <button onclick="copySingleLine()">📋 Salin Ringkas</button>
   </div>
 </div>
 
 <script>
+// ====== Data & UI ======
 let tradeData={};
 
 function updateUI(){
@@ -120,6 +126,7 @@ function updateUI(){
   document.getElementById("cNotes").textContent=tradeData.conclusion.notes;
 }
 
+// ====== Waktu ======
 function getWIBTime(){
   const now=new Date();
   const utc= now.getTime() + (now.getTimezoneOffset()*60000);
@@ -165,6 +172,7 @@ function showNotice(type, message){
   }
 }
 
+// ====== Load Data ======
 function loadData(url, isFallback=false){
   return fetch(url)
     .then(res => res.json())
@@ -191,7 +199,25 @@ loadData("data.json")
     }
   })
   .catch(() => showNotice("error", "Gagal memuat data.json."));
-</script>
 
+// ====== Copy Functions ======
+function copyLevels(){
+  const sIntraday = document.getElementById("sIntraday").textContent;
+  const sKritis = document.getElementById("sKritis").textContent;
+  const rIntraday = document.getElementById("rIntraday").textContent;
+  const rKuat = document.getElementById("rKuat").textContent;
+  const text = `Support Intraday: ${sIntraday}\nSupport Kritis: ${sKritis}\nResistance Intraday: ${rIntraday}\nResistance Kuat: ${rKuat}`;
+  navigator.clipboard.writeText(text).then(()=> alert("Key levels berhasil disalin!"));
+}
+
+function copyJSON(){
+  navigator.clipboard.writeText(JSON.stringify(tradeData,null,2)).then(()=> alert("JSON disalin!"));
+}
+
+function copySingleLine(){
+  const singleLine = `${tradeData.pair} | Spot: ${tradeData.spot} | Bias: ${tradeData.bias} | EMA: ${tradeData.emaAlignment} | Levels: S${tradeData.levels.supportIntraday}/K${tradeData.levels.supportKritis} R${tradeData.levels.resistanceIntraday}/K${tradeData.levels.resistanceKuat} | Trade: ${tradeData.quickTrade.long.entry}`;
+  navigator.clipboard.writeText(singleLine).then(()=> alert("Info singkat berhasil disalin!"));
+}
+</script>
 </body>
 </html>
