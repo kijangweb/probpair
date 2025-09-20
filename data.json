@@ -1,43 +1,48 @@
 {
   "pair": "XAU/USD",
-  "spot": "3665.50",
-  "bias": "Bullish (hati-hati di resistance 3700)",
-  "emaAlignment": "EMA 9 > 21 > 55 → tren naik kuat",
+  "spot": 1928.50,
+  "bias": "Bullish",
+  "emaAlignment": "EMA9 > EMA21 > EMA55 (Strong Bullish)",
+  "validFrom": "2025-09-20T09:00:00+07:00",
+  "validUntil": "2025-09-20T23:59:00+07:00",
+
   "levels": {
-    "supportIntraday": "3630–3635",
-    "supportKritis": "3600–3610",
-    "resistanceIntraday": "3660–3670",
-    "resistanceKuat": "3700–3720"
+    "supportIntraday": "1922.00",
+    "supportKritis": "1915.50",
+    "resistanceIntraday": "1933.00",
+    "resistanceKuat": "1940.00"
   },
+
   "quickTrade": {
     "long": {
-      "trigger": ">3660",
-      "entry": "3670–3680",
-      "tp": "3700–3720",
-      "sl": "<3630"
+      "trigger": "Break 1933",
+      "entry": "1934.00",
+      "tp": "1939.50",
+      "sl": "1928.00"
     },
     "short": {
-      "trigger": "Rejection 3660–3670 / break <3630",
-      "entry": "~3630",
-      "tp": "3600–3610",
-      "sl": ">3680"
+      "trigger": "Reject 1933",
+      "entry": "1931.00",
+      "tp": "1924.00",
+      "sl": "1936.00"
     },
     "sideways": {
-      "range": "3630–3670",
-      "strategy": "Buy near support, Sell near resistance, TP seberang range, SL ±10-20 pip"
+      "range": "1922 – 1933",
+      "strategy": "Scalp buy near support, sell near resistance"
     }
   },
-  "risk": "R:R minimal 1:2–1:3, hindari news besar, gunakan ATR H1",
+
+  "risk": "Gunakan 1–2% per posisi. Hindari overtrade saat volatilitas tinggi (FOMC/US data).",
+
   "fundamental": {
-    "sentiment": "Positif, didukung data inflasi melemah",
-    "risk": "Geopolitik & data NFP minggu ini",
-    "projection": "Potensi uji 3700 sebelum retrace"
+    "sentiment": "Positif untuk emas seiring melemahnya USD Index.",
+    "risk": "Rilis data CPI malam ini dapat meningkatkan volatilitas.",
+    "projection": "Jika CPI < ekspektasi → emas bullish berlanjut; jika > ekspektasi → koreksi turun."
   },
+
   "conclusion": {
-    "bias": "Bullish",
-    "strategy": "Buy on dip dekat support, TP di resistance",
-    "notes": "Hindari entry saat news high impact"
-  },
-  "validFrom": "2025-09-20T07:00:00+07:00",
-  "validUntil": "2025-09-20T23:59:59+07:00"
+    "bias": "Bullish intraday",
+    "strategy": "Buy on breakout di atas 1933 atau buy dip dekat 1922",
+    "notes": "Waspadai rilis CPI jam 19:30 WIB."
+  }
 }
