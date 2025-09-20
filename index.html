@@ -14,14 +14,14 @@
   --button-bg:#ffd700;
   --button-hover:#ffec70;
 }
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma, Geneva, Verdana,sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
 body{background:var(--primary-bg);color:var(--text);padding:20px;}
 .container{max-width:720px;margin:auto;}
 .card{background:var(--card-bg);border-radius:16px;padding:25px;margin-bottom:20px;box-shadow:0 8px 25px rgba(0,0,0,0.4);}
 h2{margin-bottom:15px;font-weight:600;color:var(--accent);}
 h3{margin:15px 0 8px;font-weight:500;color:var(--accent-light);}
 .levels{display:grid;grid-template-columns:1fr 1fr;gap:10px 15px;margin-bottom:15px;}
-.level{padding:10px 12px;border-radius:10px;display:flex;justify-content:space-between;font-weight:500;background:#2a2a2a;cursor:pointer;transition:.2s;user-select:text;}
+.level{padding:10px 12px;border-radius:10px;display:flex;justify-content:space-between;font-weight:500;background:#2a2a2a;cursor:pointer;transition:.2s;}
 .level:hover{background:#3a3a3a;color:var(--accent);}
 .trade{padding:12px 15px;border-radius:12px;margin-bottom:10px;font-weight:500;cursor:pointer;transition:.2s;}
 .long{background:var(--accent);color:#000;}
@@ -37,7 +37,8 @@ table{width:100%;border-collapse:collapse;margin-top:15px;}
 table,th,td{border:1px solid #444;}
 th,td{padding:10px;text-align:center;}
 th{background:#2a2a2a;color:var(--accent-light);}
-.info{margin-top:10px;color:#ccc;font-size:14px;}
+.info{margin-top:10px;font-size:14px;color:#aaa;}
+#countdown{color:var(--accent-light);font-weight:bold;margin-top:5px;}
 </style>
 </head>
 <body>
@@ -45,19 +46,18 @@ th{background:#2a2a2a;color:var(--accent-light);}
 <div class="container">
   <div class="card">
     <h2>PAIR QUICK DECISION SHEET</h2>
-    <p><strong>Pair:</strong> <span id="pair">-</span></p>
-    <p><strong>Spot Price:</strong> <span id="spot">-</span></p>
+    <p><strong>Pair:</strong> <span id="pair">XAU/USD</span></p>
+    <p><strong>Spot Price:</strong> <span id="spot">3665.50</span></p>
     <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
-
-    <p><strong>Bias:</strong> <span id="bias">-</span></p>
-    <p><strong>EMA Alignment:</strong> <span id="ema">-</span></p>
+    <p><strong>Bias:</strong> <span id="bias">Bullish (hati-hati di resistance 3700)</span></p>
+    <p><strong>EMA Alignment:</strong> <span id="ema">EMA 9 > 21 > 55 → tren naik kuat</span></p>
 
     <h3>Level Kunci</h3>
     <div class="levels">
-      <div class="level">Support Intraday<span id="sIntraday">-</span></div>
-      <div class="level">Support Kritis<span id="sKritis">-</span></div>
-      <div class="level">Resistance Intraday<span id="rIntraday">-</span></div>
-      <div class="level">Resistance Kuat<span id="rKuat">-</span></div>
+      <div class="level">Support Intraday<span id="sIntraday">3630–3635</span></div>
+      <div class="level">Support Kritis<span id="sKritis">3600–3610</span></div>
+      <div class="level">Resistance Intraday<span id="rIntraday">3660–3670</span></div>
+      <div class="level">Resistance Kuat<span id="rKuat">3700–3720</span></div>
     </div>
     <button onclick="copyLevels()">📋 Salin Level</button>
 
@@ -96,6 +96,12 @@ th{background:#2a2a2a;color:var(--accent-light);}
       </tr>
     </table>
 
+    <div class="info">
+      <p id="validPeriod">Berlaku: <span id="validFrom">-</span> s/d <span id="validUntil">-</span></p>
+      <p id="countdown">⏳ -</p>
+      <p id="lastUpdate">Last Update: -</p>
+    </div>
+
     <h3>Update / Import JSON</h3>
     <textarea id="jsonInput" placeholder="Paste JSON di sini untuk update..."></textarea>
     <button onclick="importJSON()">🔄 Update Value</button>
@@ -103,11 +109,8 @@ th{background:#2a2a2a;color:var(--accent-light);}
     <pre id="jsonOutput" style="display:none;"></pre>
     <button onclick="copyJSON()">📋 Salin JSON</button>
     <button onclick="copySingleLine()">📋 Salin Ringkas</button>
-    <button onclick="refreshFromGithub()">🔄 Refresh dari GitHub</button>
+    <button onclick="fetchFromGitHub()">🌐 Refresh dari GitHub</button>
     <button onclick="resetDefault()">♻️ Reset Default</button>
-
-    <p class="info">Last Update: <span id="lastUpdate">-</span></p>
-    <p class="info">Berlaku: <span id="validFrom">-</span> s/d <span id="validUntil">-</span></p>
   </div>
 </div>
 
@@ -118,7 +121,7 @@ let tradeData={
   bias:"Bullish (hati-hati di resistance 3700)",
   emaAlignment:"EMA 9 > 21 > 55 → tren naik kuat",
   levels:{supportIntraday:"3630–3635",supportKritis:"3600–3610",resistanceIntraday:"3660–3670",resistanceKuat:"3700–3720"},
-  quickTrade:{long:{trigger:">3660",entry:"3670–3680",tp:"3700–3720",sl:"<3630"},short:{trigger:"Rejection 3660–3670 / break <3630",entry:"~3630",tp:"3600–3610",sl:">3680"},sideways:{range:"3630–3670",strategy:"Buy near support, Sell near resistance, TP seberang range, SL ±10-20 pip"}},
+  quickTrade:{long:{trigger:">3660",entry:"3670–3680",tp:"3700–3720",sl:"<3630"},short:{trigger:"Rejection 3660–3670 / break <3630",entry:"~3630",tp:"3600–3610",sl:">3680"},sideways:{range:"3630–3670",strategy:"Buy near support, Sell near resistance, TP seberang range, SL ±10-20 pip"}} ,
   risk:"R:R minimal 1:2–1:3, hindari news besar, gunakan ATR H1",
   fundamental:{sentiment:"Positif, didukung data inflasi melemah",risk:"Geopolitik & data NFP minggu ini",projection:"Potensi uji 3700 sebelum retrace"},
   conclusion:{bias:"Bullish",strategy:"Buy on dip dekat support, TP di resistance",notes:"Hindari entry saat news high impact"},
@@ -126,7 +129,7 @@ let tradeData={
   validUntil:"2025-09-21 09:00 WIB"
 };
 
-const defaultData = JSON.parse(JSON.stringify(tradeData));
+let countdownTimer;
 
 function updateUI(){
   document.getElementById("pair").textContent=tradeData.pair;
@@ -150,11 +153,35 @@ function updateUI(){
   document.getElementById("cNotes").textContent=tradeData.conclusion.notes;
   document.getElementById("jsonOutput").textContent=JSON.stringify(tradeData,null,2);
 
-  // periode berlaku
-  document.getElementById("validFrom").textContent = tradeData.validFrom || "-";
-  document.getElementById("validUntil").textContent = tradeData.validUntil || "-";
+  if(tradeData.validFrom && tradeData.validUntil){
+    document.getElementById("validFrom").textContent = tradeData.validFrom;
+    document.getElementById("validUntil").textContent = tradeData.validUntil;
+    startCountdown();
+  }
+}
 
-  checkExpiry();
+function startCountdown(){
+  clearInterval(countdownTimer);
+  if(tradeData.validUntil){
+    const expiry = new Date(tradeData.validUntil.replace(" WIB","").replace(" ","T"));
+    countdownTimer = setInterval(()=>{
+      const now = new Date();
+      const diff = expiry - now;
+      if(diff <= 0){
+        document.getElementById("countdown").textContent = "⚠️ Expired";
+        clearInterval(countdownTimer);
+        return;
+      }
+      const days = Math.floor(diff / (1000*60*60*24));
+      const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+      const minutes = Math.floor((diff % (1000*60*60)) / (1000*60));
+      const seconds = Math.floor((diff % (1000*60)) / 1000);
+      let output = "";
+      if(days > 0) output += days+"d ";
+      output += `${hours}h ${minutes}m ${seconds}s`;
+      document.getElementById("countdown").textContent = "⏳ Berlaku sisa: " + output;
+    },1000);
+  }
 }
 
 function getWIBTime(){
@@ -169,69 +196,15 @@ function getWIBTime(){
   return `${yyyy}-${mm}-${dd} ${hh}:${min} WIB`;
 }
 
-function checkExpiry(){
-  if(tradeData.validUntil){
-    const now = new Date();
-    const expiry = new Date(tradeData.validUntil.replace(" WIB","").replace(" ","T"));
-    if(now > expiry){
-      alert("⚠️ Data sudah kadaluarsa (expired)!");
-    }
-  }
-}
-
-function isValidStructure(obj, ref){
-  return Object.keys(ref).every(k => k in obj);
-}
-
-function mergeDefault(ref, obj){
-  let merged = JSON.parse(JSON.stringify(ref));
-  for(const k in obj){
-    if(typeof obj[k]==="object" && obj[k]!==null && !Array.isArray(obj[k])){
-      merged[k] = mergeDefault(ref[k], obj[k]);
-    } else {
-      merged[k] = obj[k];
-    }
-  }
-  return merged;
-}
-
-async function refreshFromGithub(){
-  const url = "https://raw.githubusercontent.com/kijangweb/probpair/main/data.json";
-  try {
-    const res = await fetch(url + "?t=" + new Date().getTime());
-    const obj = await res.json();
-    if(isValidStructure(obj, defaultData)){
-      tradeData = mergeDefault(defaultData, obj);
-      updateUI();
-      document.getElementById("lastUpdate").textContent = getWIBTime();
-      alert("✅ Data berhasil di-refresh dari GitHub!");
-    } else {
-      alert("❌ Struktur data.json di GitHub tidak sesuai kerangka!");
-    }
-  } catch(e){
-    alert("⚠️ Gagal load data dari GitHub.");
-    console.error(e);
-  }
-}
-
-function resetDefault(){
-  tradeData = JSON.parse(JSON.stringify(defaultData));
-  updateUI();
-  document.getElementById("lastUpdate").textContent = getWIBTime();
-  alert("♻️ Data dikembalikan ke default!");
-}
-
 function copyJSON(){navigator.clipboard.writeText(JSON.stringify(tradeData,null,2)).then(_=>alert("JSON disalin!"))}
 
 function toggleJSON(){
   const out = document.getElementById('jsonOutput');
   const btn = document.getElementById('toggleJsonBtn');
   if(out.style.display==='none'){
-    out.style.display='block';
-    btn.textContent='🙈 Hide JSON';
+    out.style.display='block'; btn.textContent='🙈 Hide JSON';
   }else{
-    out.style.display='none';
-    btn.textContent='👁️ Show JSON';
+    out.style.display='none'; btn.textContent='👁️ Show JSON';
   }
 }
 
@@ -240,43 +213,37 @@ function importJSON(){
   if(!input) return alert("Masukkan JSON dulu!");
   try{
     const obj=JSON.parse(input);
-    if(isValidStructure(obj, defaultData)){
-      tradeData=mergeDefault(defaultData, obj);
-      updateUI();
-      alert("Data berhasil diperbarui!");
-    }else{
-      alert("JSON invalid! Struktur tidak sesuai kerangka.");
-    }
-  }catch(e){
-    alert("JSON invalid! Periksa formatnya.");
-  }
+    tradeData=obj; updateUI();
+    alert("Data berhasil diperbarui!");
+  }catch(e){ alert("JSON invalid! Periksa formatnya."); }
 }
 
+function fetchFromGitHub(){
+  fetch("data.json?"+Date.now())
+    .then(res=>res.json())
+    .then(data=>{
+      tradeData=data; updateUI();
+      document.getElementById("lastUpdate").textContent="Last Update: "+getWIBTime();
+    })
+    .catch(()=>alert("Gagal mengambil data dari GitHub."));
+}
+
+function resetDefault(){ updateUI(); alert("Reset ke default!"); }
+
 function copyLevels(){
-  const sIntraday = document.getElementById("sIntraday").textContent;
-  const sKritis = document.getElementById("sKritis").textContent;
-  const rIntraday = document.getElementById("rIntraday").textContent;
-  const rKuat = document.getElementById("rKuat").textContent;
-  const text = `Support Intraday: ${sIntraday}\nSupport Kritis: ${sKritis}\nResistance Intraday: ${rIntraday}\nResistance Kuat: ${rKuat}`;
-  navigator.clipboard.writeText(text).then(()=> alert("Key levels berhasil disalin!"));
+  const text = `Support Intraday: ${tradeData.levels.supportIntraday}
+Support Kritis: ${tradeData.levels.supportKritis}
+Resistance Intraday: ${tradeData.levels.resistanceIntraday}
+Resistance Kuat: ${tradeData.levels.resistanceKuat}`;
+  navigator.clipboard.writeText(text).then(()=> alert("Key levels disalin!"));
 }
 
 function copySingleLine(){
-  const pair = document.getElementById("pair").textContent;
-  const spot = document.getElementById("spot").textContent;
-  const bias = document.getElementById("bias").textContent;
-  const ema = document.getElementById("ema").textContent;
-  const sIntraday = document.getElementById("sIntraday").textContent;
-  const sKritis = document.getElementById("sKritis").textContent;
-  const rIntraday = document.getElementById("rIntraday").textContent;
-  const rKuat = document.getElementById("rKuat").textContent;
-  const tLong = document.getElementById("tLong").textContent;
-  const singleLine = `${pair} | Spot: ${spot} | Bias: ${bias} | EMA: ${ema} | Levels: S${sIntraday}/K${sKritis} R${rIntraday}/K${rKuat} | Trade: ${tLong}`;
-  navigator.clipboard.writeText(singleLine).then(()=> alert("Info singkat berhasil disalin!"));
+  const singleLine = `${tradeData.pair} | Spot: ${tradeData.spot} | Bias: ${tradeData.bias} | EMA: ${tradeData.emaAlignment} | Levels: S${tradeData.levels.supportIntraday}/K${tradeData.levels.supportKritis} R${tradeData.levels.resistanceIntraday}/K${tradeData.levels.resistanceKuat} | Trade: Long ${tradeData.quickTrade.long.entry} TP ${tradeData.quickTrade.long.tp}`;
+  navigator.clipboard.writeText(singleLine).then(()=> alert("Info singkat disalin!"));
 }
 
 updateUI();
 </script>
-
 </body>
 </html>
