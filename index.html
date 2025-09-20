@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gold Quick Decision Sheet</title>
+<style>
+:root{
+  --primary-bg:#121212;
+  --text:#fff;
+  --accent:#ffd700;
+  --accent-light:#ffe066;
+  --card-bg:#1e1e1e;
+  --button-bg:#ffd700;
+  --button-hover:#ffec70;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma, Geneva, Verdana,sans-serif;}
+body{background:var(--primary-bg);color:var(--text);padding:20px;}
+.container{max-width:720px;margin:auto;}
+.card{background:var(--card-bg);border-radius:16px;padding:25px;margin-bottom:20px;box-shadow:0 8px 25px rgba(0,0,0,0.4);}
+h2{margin-bottom:15px;font-weight:600;color:var(--accent);}
+h3{margin:15px 0 8px;font-weight:500;color:var(--accent-light);}
+.levels{display:grid;grid-template-columns:1fr 1fr;gap:10px 15px;margin-bottom:15px;}
+.level{padding:10px 12px;border-radius:10px;display:flex;justify-content:space-between;font-weight:500;background:#2a2a2a;cursor:pointer;transition:.2s;user-select:text;}
+.level:hover{background:#3a3a3a;color:var(--accent);}
+.trade{padding:12px 15px;border-radius:12px;margin-bottom:10px;font-weight:500;cursor:pointer;transition:.2s;}
+.long{background:var(--accent);color:#000;}
+.short{background:#b8860b;color:#fff;}
+.sideways{background:var(--accent-light);color:#000;}
+.trade:hover{opacity:.85;transform:scale(1.02);}
+.risk{margin-top:15px;padding:12px;border-radius:12px;background:#2a2a2a;color:#fff;}
+button{padding:10px 18px;border:none;border-radius:8px;cursor:pointer;background:var(--button-bg);color:#000;font-weight:600;margin-top:10px;transition:.2s;margin-right:5px;margin-bottom:5px;}
+button:hover{background:var(--button-hover);}
+textarea{width:100%;height:100px;margin-top:10px;padding:10px;border-radius:8px;background:#2a2a2a;color:#fff;border:none;font-family:monospace;font-size:14px;}
+pre{background:#2a2a2a;padding:15px;border-radius:10px;overflow-x:auto;margin-top:15px;font-size:14px;color:#fff;}
+table{width:100%;border-collapse:collapse;margin-top:15px;}
+table,th,td{border:1px solid #444;}
+th,td{padding:10px;text-align:center;}
+th{background:#2a2a2a;color:var(--accent-light);}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="card">
+    <h2>PAIR QUICK DECISION SHEET</h2>
+    <p><strong>Pair:</strong> <span id="pair">XAU/USD</span></p>
+    <p><strong>Spot Price:</strong> <span id="spot">3665.50</span></p>
+    <p><strong>Timestamp:</strong> <span id="timestamp"></span></p>
+
+    <p><strong>Bias:</strong> <span id="bias">Bullish (hati-hati di resistance 3700)</span></p>
+    <p><strong>EMA Alignment:</strong> <span id="ema">EMA 9 > 21 > 55 → tren naik kuat</span></p>
+
+    <h3>Level Kunci</h3>
+    <div class="levels">
+      <div class="level">Support Intraday<span id="sIntraday">3630–3635</span></div>
+      <div class="level">Support Kritis<span id="sKritis">3600–3610</span></div>
+      <div class="level">Resistance Intraday<span id="rIntraday">3660–3670</span></div>
+      <div class="level">Resistance Kuat<span id="rKuat">3700–3720</span></div>
+    </div>
+    <button onclick="copyLevels()">📋 Salin Level</button>
+
+    <h3>Quick Trade Triggers</h3>
+    <div class="trade long" id="tLong"></div>
+    <div class="trade short" id="tShort"></div>
+    <div class="trade sideways" id="tSideways"></div>
+
+    <div class="risk" id="riskText"></div>
+
+    <h3>Fundamental Check</h3>
+    <table>
+      <tr>
+        <th>Sentiment</th>
+        <th>Risk</th>
+        <th>Projection</th>
+      </tr>
+      <tr>
+        <td id="sentiment"></td>
+        <td id="risk"></td>
+        <td id="projection"></td>
+      </tr>
+    </table>
+
+    <h3>Kesimpulan</h3>
+    <table>
+      <tr>
+        <th>Bias</th>
+        <th>Strategy</th>
+        <th>Notes</th>
+      </tr>
+      <tr>
+        <td id="cBias"></td>
+        <td id="cStrategy"></td>
+        <td id="cNotes"></td>
+      </tr>
+    </table>
+
+    <h3>Update / Import JSON</h3>
+    <textarea id="jsonInput" placeholder="Paste JSON di sini untuk update..."></textarea>
+    <button onclick="importJSON()">🔄 Update Value</button>
+    <button onclick="refreshFromGithub()">🔄 Refresh dari GitHub</button>
+    <button onclick="resetDefault()">♻️ Reset Default</button>
+
+    <button id="toggleJsonBtn" onclick="toggleJSON()">👁️ Show JSON</button>
+    <pre id="jsonOutput" style="display:none;"></pre>
+
+    <button onclick="copyJSON()">📋 Salin JSON</button>
+    <button onclick="copySingleLine()">📋 Salin Ringkas</button>
+  </div>
+</div>
+
+<script>
+// --- default kerangka
+let tradeData = {
+  pair:"XAU/USD",
+  spot:"3665.50",
+  bias:"Bullish (hati-hati di resistance 3700)",
+  emaAlignment:"EMA 9 > 21 > 55 → tren naik kuat",
+  levels:{
+    supportIntraday:"3630–3635",
+    supportKritis:"3600–3610",
+    resistanceIntraday:"3660–3670",
+    resistanceKuat:"3700–3720"
+  },
+  quickTrade:{
+    long:{trigger:">3660",entry:"3670–3680",tp:"3700–3720",sl:"<3630"},
+    short:{trigger:"Rejection 3660–3670 / break <3630",entry:"~3630",tp:"3600–3610",sl:">3680"},
+    sideways:{range:"3630–3670",strategy:"Buy near support, Sell near resistance, TP seberang range, SL ±10-20 pip"}
+  },
+  risk:"R:R minimal 1:2–1:3, hindari news besar, gunakan ATR H1",
+  fundamental:{
+    sentiment:"Positif, didukung data inflasi melemah",
+    risk:"Geopolitik & data NFP minggu ini",
+    projection:"Potensi uji 3700 sebelum retrace"
+  },
+  conclusion:{
+    bias:"Bullish",
+    strategy:"Buy on dip dekat support, TP di resistance",
+    notes:"Hindari entry saat news high impact"
+  }
+};
+
+// --- validasi struktur
+function isValidStructure(obj, template){
+  if(typeof obj !== typeof template) return false;
+  if(typeof template === "object" && !Array.isArray(template)){
+    for(const key in obj){
+      if(!(key in template)) return false;
+      if(!isValidStructure(obj[key], template[key])) return false;
+    }
+  }
+  return true;
+}
+
+// --- merge default + update
+function mergeDefault(template, obj){
+  let result = Array.isArray(template)? [...template]: {...template};
+  for(const key in obj){
+    if(typeof obj[key] === "object" && obj[key] !== null){
+      result[key] = mergeDefault(template[key], obj[key]);
+    } else {
+      result[key] = obj[key];
+    }
+  }
+  return result;
+}
+
+// --- UI updater
+function updateUI(){
+  document.getElementById("pair").textContent=tradeData.pair;
+  document.getElementById("spot").textContent=tradeData.spot;
+  document.getElementById("timestamp").textContent=getWIBTime();
+  document.getElementById("bias").textContent=tradeData.bias;
+  document.getElementById("ema").textContent=tradeData.emaAlignment;
+  document.getElementById("sIntraday").textContent=tradeData.levels.supportIntraday;
+  document.getElementById("sKritis").textContent=tradeData.levels.supportKritis;
+  document.getElementById("rIntraday").textContent=tradeData.levels.resistanceIntraday;
+  document.getElementById("rKuat").textContent=tradeData.levels.resistanceKuat;
+  document.getElementById("tLong").textContent=`Long: Trigger ${tradeData.quickTrade.long.trigger}, Entry ${tradeData.quickTrade.long.entry}, TP ${tradeData.quickTrade.long.tp}, SL ${tradeData.quickTrade.long.sl}`;
+  document.getElementById("tShort").textContent=`Short: ${tradeData.quickTrade.short.trigger}, Entry ${tradeData.quickTrade.short.entry}, TP ${tradeData.quickTrade.short.tp}, SL ${tradeData.quickTrade.short.sl}`;
+  document.getElementById("tSideways").textContent=`Sideways/Range: ${tradeData.quickTrade.sideways.range}, ${tradeData.quickTrade.sideways.strategy}`;
+  document.getElementById("riskText").textContent=`Risk Management: ${tradeData.risk}`;
+  document.getElementById("sentiment").textContent=tradeData.fundamental.sentiment;
+  document.getElementById("risk").textContent=tradeData.fundamental.risk;
+  document.getElementById("projection").textContent=tradeData.fundamental.projection;
+  document.getElementById("cBias").textContent=tradeData.conclusion.bias;
+  document.getElementById("cStrategy").textContent=tradeData.conclusion.strategy;
+  document.getElementById("cNotes").textContent=tradeData.conclusion.notes;
+  document.getElementById("jsonOutput").textContent=JSON.stringify(tradeData,null,2);
+  localStorage.setItem("tradeData", JSON.stringify(tradeData)); // simpan lokal
+}
+
+// --- waktu WIB
+function getWIBTime(){
+  const now=new Date();
+  const utc= now.getTime() + (now.getTimezoneOffset()*60000);
+  const wib= new Date(utc + (7*60*60000));
+  return `${wib.getFullYear()}-${String(wib.getMonth()+1).padStart(2,'0')}-${String(wib.getDate()).padStart(2,'0')} ${String(wib.getHours()).padStart(2,'0')}:${String(wib.getMinutes()).padStart(2,'0')} WIB`;
+}
+
+// --- Import JSON manual
+function importJSON(){
+  const input=document.getElementById("jsonInput").value;
+  if(!input) return alert("Masukkan JSON dulu!");
+  try{
+    const obj=JSON.parse(input);
+    if(!isValidStructure(obj, tradeData)){
+      return alert("JSON tidak sesuai kerangka!");
+    }
+    tradeData = mergeDefault(tradeData, obj);
+    updateUI();
+    alert("Data berhasil diperbarui!");
+  }catch(e){
+    alert("JSON invalid!");
+  }
+}
+
+// --- Refresh dari GitHub
+async function refreshFromGithub(){
+  const url = "https://raw.githubusercontent.com/USERNAME/REPO/main/data.json"; // ganti dengan repo kamu
+  try {
+    const res = await fetch(url + "?t=" + new Date().getTime());
+    const obj = await res.json();
+    if(isValidStructure(obj, tradeData)){
+      tradeData = mergeDefault(tradeData, obj);
+      updateUI();
+      alert("Data berhasil di-refresh dari GitHub!");
+    } else {
+      alert("❌ Struktur data.json tidak sesuai kerangka!");
+    }
+  } catch(e){
+    alert("⚠️ Gagal load data dari GitHub.");
+  }
+}
+
+// --- Reset default
+function resetDefault(){
+  localStorage.removeItem("tradeData");
+  location.reload();
+}
+
+// --- toggle JSON
+function toggleJSON(){
+  const out = document.getElementById('jsonOutput');
+  const btn = document.getElementById('toggleJsonBtn');
+  if(out.style.display==='none'){out.style.display='block';btn.textContent='🙈 Hide JSON';}
+  else{out.style.display='none';btn.textContent='👁️ Show JSON';}
+}
+
+// --- Copy
+function copyJSON(){navigator.clipboard.writeText(JSON.stringify(tradeData,null,2)).then(()=>alert("JSON disalin!"))}
+function copyLevels(){
+  const text = `Support Intraday: ${tradeData.levels.supportIntraday}\nSupport Kritis: ${tradeData.levels.supportKritis}\nResistance Intraday: ${tradeData.levels.resistanceIntraday}\nResistance Kuat: ${tradeData.levels.resistanceKuat}`;
+  navigator.clipboard.writeText(text).then(()=>alert("Key levels berhasil disalin!"));
+}
+function copySingleLine(){
+  const singleLine = `${tradeData.pair} | Spot: ${tradeData.spot} | Bias: ${tradeData.bias} | EMA: ${tradeData.emaAlignment} | Levels: S${tradeData.levels.supportIntraday}/K${tradeData.levels.supportKritis} R${tradeData.levels.resistanceIntraday}/K${tradeData.levels.resistanceKuat} | Trade: Long Trigger ${tradeData.quickTrade.long.trigger}`;
+  navigator.clipboard.writeText(singleLine).then(()=>alert("Info singkat berhasil disalin!"));
+}
+
+// --- load awal
+(function init(){
+  const saved = localStorage.getItem("tradeData");
+  if(saved){
+    try{
+      const obj = JSON.parse(saved);
+      if(isValidStructure(obj, tradeData)){
+        tradeData = mergeDefault(tradeData, obj);
+      }
+    }catch(e){}
+  }
+  updateUI();
+})();
+</script>
+</body>
+</html>
