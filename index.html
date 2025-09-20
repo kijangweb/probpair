@@ -89,24 +89,26 @@ th{background:#2a2a2a;color:var(--accent-light);}
         <td id="cNotes"></td>
       </tr>
     </table>
+
+    <h3>Update / Import JSON</h3>
+    <textarea id="jsonInput" placeholder="Paste JSON di sini untuk update..."></textarea>
+    <input type="password" id="pinInput" placeholder="Masukkan PIN"/>
+    <button onclick="updateRepo()">🔄 Update Repo</button>
   </div>
 </div>
 
 <script>
-// --- Config ---
-// Ganti URL JSON ini dengan path ke file JSON di repo GitHub Pages
-const jsonURL = 'tradeData.json';
-
 let countdownTimer;
+const backendURL = 'http://localhost:3000/update-json'; // backend Node.js
+const jsonURL = 'tradeData.json'; // file JSON di repo GitHub Pages
 
-// --- Ambil JSON dari repo GitHub ---
-async function fetchData(){
-  try{
+// --- Fetch JSON dari repo ---
+async function fetchData() {
+  try {
     const res = await fetch(jsonURL);
-    if(!res.ok) throw new Error("Gagal load JSON");
-    const data = await res.json();
-    return data;
-  }catch(e){
+    if (!res.ok) throw new Error('Gagal load JSON');
+    return await res.json();
+  } catch (e) {
     console.error(e);
     return null;
   }
@@ -119,49 +121,72 @@ function startCountdown(validUntil) {
     const now = new Date();
     const end = new Date(validUntil);
     const diff = end - now;
-    if(diff <= 0){
+    if (diff <= 0) {
       clearInterval(countdownTimer);
       document.getElementById('countdown').textContent = "Expired";
       return;
     }
-    const hours = String(Math.floor(diff / 1000 / 60 / 60)).padStart(2,'0');
-    const minutes = String(Math.floor((diff / 1000 / 60) % 60)).padStart(2,'0');
-    const seconds = String(Math.floor((diff / 1000) % 60)).padStart(2,'0');
-    document.getElementById('countdown').textContent = `${hours}:${minutes}:${seconds}`;
+    const h = String(Math.floor(diff/1000/60/60)).padStart(2,'0');
+    const m = String(Math.floor((diff/1000/60)%60)).padStart(2,'0');
+    const s = String(Math.floor((diff/1000)%60)).padStart(2,'0');
+    document.getElementById('countdown').textContent = `${h}:${m}:${s}`;
   }, 1000);
 }
 
 // --- Update UI ---
-function updateUI(tradeData){
-  document.getElementById("pair").textContent = tradeData.pair;
-  document.getElementById("spot").textContent = tradeData.spot;
+function updateUI(data){
+  document.getElementById("pair").textContent = data.pair;
+  document.getElementById("spot").textContent = data.spot;
   document.getElementById("timestamp").textContent = new Date().toLocaleString();
-  document.getElementById("bias").textContent = tradeData.bias;
-  document.getElementById("ema").textContent = tradeData.emaAlignment;
-  document.getElementById("sIntraday").textContent = tradeData.levels.supportIntraday;
-  document.getElementById("sKritis").textContent = tradeData.levels.supportKritis;
-  document.getElementById("rIntraday").textContent = tradeData.levels.resistanceIntraday;
-  document.getElementById("rKuat").textContent = tradeData.levels.resistanceKuat;
-  document.getElementById("tLong").textContent = `Long: Trigger ${tradeData.quickTrade.long.trigger}, Entry ${tradeData.quickTrade.long.entry}, TP ${tradeData.quickTrade.long.tp}, SL ${tradeData.quickTrade.long.sl}`;
-  document.getElementById("tShort").textContent = `Short: ${tradeData.quickTrade.short.trigger}, Entry ${tradeData.quickTrade.short.entry}, TP ${tradeData.quickTrade.short.tp}, SL ${tradeData.quickTrade.short.sl}`;
-  document.getElementById("tSideways").textContent = `Sideways/Range: ${tradeData.quickTrade.sideways.range}, ${tradeData.quickTrade.sideways.strategy}`;
-  document.getElementById("riskText").textContent = `Risk Management: ${tradeData.risk}`;
-  document.getElementById("sentiment").textContent = tradeData.fundamental.sentiment;
-  document.getElementById("risk").textContent = tradeData.fundamental.risk;
-  document.getElementById("projection").textContent = tradeData.fundamental.projection;
-  document.getElementById("cBias").textContent = tradeData.conclusion.bias;
-  document.getElementById("cStrategy").textContent = tradeData.conclusion.strategy;
-  document.getElementById("cNotes").textContent = tradeData.conclusion.notes;
-  startCountdown(tradeData.validUntil);
+  document.getElementById("bias").textContent = data.bias;
+  document.getElementById("ema").textContent = data.emaAlignment;
+  document.getElementById("sIntraday").textContent = data.levels.supportIntraday;
+  document.getElementById("sKritis").textContent = data.levels.supportKritis;
+  document.getElementById("rIntraday").textContent = data.levels.resistanceIntraday;
+  document.getElementById("rKuat").textContent = data.levels.resistanceKuat;
+  document.getElementById("tLong").textContent = `Long: Trigger ${data.quickTrade.long.trigger}, Entry ${data.quickTrade.long.entry}, TP ${data.quickTrade.long.tp}, SL ${data.quickTrade.long.sl}`;
+  document.getElementById("tShort").textContent = `Short: ${data.quickTrade.short.trigger}, Entry ${data.quickTrade.short.entry}, TP ${data.quickTrade.short.tp}, SL ${data.quickTrade.short.sl}`;
+  document.getElementById("tSideways").textContent = `Sideways: ${data.quickTrade.sideways.range}, ${data.quickTrade.sideways.strategy}`;
+  document.getElementById("riskText").textContent = `Risk Management: ${data.risk}`;
+  document.getElementById("sentiment").textContent = data.fundamental.sentiment;
+  document.getElementById("risk").textContent = data.fundamental.risk;
+  document.getElementById("projection").textContent = data.fundamental.projection;
+  document.getElementById("cBias").textContent = data.conclusion.bias;
+  document.getElementById("cStrategy").textContent = data.conclusion.strategy;
+  document.getElementById("cNotes").textContent = data.conclusion.notes;
+  startCountdown(data.validUntil);
 }
 
-// --- Copy functions ---
-function copyLevels(){
-  const levels = document.getElementById("sIntraday").textContent + "\n" +
-                 document.getElementById("sKritis").textContent + "\n" +
-                 document.getElementById("rIntraday").textContent + "\n" +
-                 document.getElementById("rKuat").textContent;
-  navigator.clipboard.writeText(levels).then(_=>alert("Key levels berhasil disalin!"));
+// --- Copy level ---
+function copyLevels() {
+  const levels = [
+    document.getElementById("sIntraday").textContent,
+    document.getElementById("sKritis").textContent,
+    document.getElementById("rIntraday").textContent,
+    document.getElementById("rKuat").textContent
+  ].join("\n");
+  navigator.clipboard.writeText(levels).then(_ => alert("Key levels berhasil disalin!"));
+}
+
+// --- Update JSON via backend ---
+async function updateRepo() {
+  const pin = document.getElementById("pinInput").value;
+  const jsonInput = document.getElementById("jsonInput").value;
+  if (!pin || !jsonInput) return alert("Masukkan PIN dan JSON");
+
+  try {
+    const newData = JSON.parse(jsonInput);
+    const res = await fetch(backendURL, {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin, newData })
+    });
+    const result = await res.json();
+    alert(result.message);
+  } catch(err) {
+    console.error(err);
+    alert("Gagal update JSON: " + err.message);
+  }
 }
 
 // --- Initialize ---
@@ -170,5 +195,6 @@ function copyLevels(){
   if(data) updateUI(data);
 })();
 </script>
+
 </body>
 </html>
