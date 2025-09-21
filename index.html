@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Trade Data Viewer with Timer</title>
+  <title>Trade Data Viewer with 30s Timer</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
     h1 { margin-bottom: 10px; }
@@ -30,26 +30,24 @@
   <script>
     const FILE_URL = "https://raw.githubusercontent.com/kijangweb/probpair/main/tradeData.json";
     let lastData = null;
-    let startTime = Date.now();
+    let timerSec = 0;
+    const TIMER_MAX = 30; // loop tiap 30 detik
     let timerInterval;
 
     async function loadData() {
       try {
-        const res = await fetch(FILE_URL + "?t=" + Date.now()); // bypass cache
+        const res = await fetch(FILE_URL + "?t=" + Date.now());
         if (!res.ok) throw new Error("Gagal fetch data");
         const data = await res.json();
 
         if (JSON.stringify(data) !== JSON.stringify(lastData)) {
-          // data baru terdeteksi
-          const delaySec = Math.round((Date.now() - startTime) / 1000);
+          const delaySec = timerSec;
           document.getElementById("status").innerText = `✅ Data baru terdeteksi setelah ${delaySec} detik`;
           lastData = data;
           renderPreview(data);
 
-          // restart timer
-          startTime = Date.now();
-          clearInterval(timerInterval);
-          startCountdown();
+          // reset timer
+          timerSec = 0;
         }
       } catch (err) {
         document.getElementById("status").innerText = "❌ Error: " + err.message;
@@ -89,7 +87,6 @@
 
       renderRows(data);
 
-      // filter pencarian
       document.getElementById("search").addEventListener("input", e => {
         const q = e.target.value.toLowerCase();
         const filtered = data.filter(obj =>
@@ -101,21 +98,22 @@
       });
     }
 
-    function startCountdown() {
+    function startTimer() {
       timerInterval = setInterval(() => {
-        const diff = Math.round((Date.now() - startTime) / 1000);
-        document.getElementById("timer").innerText = `⏳ Menunggu update... (${diff} detik)`;
+        timerSec++;
+        if (timerSec > TIMER_MAX) timerSec = 0; // loop setiap 30 detik
+        document.getElementById("timer").innerText = `⏳ Menunggu update... (${timerSec} detik)`;
       }, 1000);
     }
 
     document.getElementById("refreshBtn").addEventListener("click", loadData);
 
-    // auto cek tiap 5 detik
+    // auto cek setiap 5 detik
     setInterval(loadData, 5000);
 
-    // load awal
+    // start
     loadData();
-    startCountdown();
+    startTimer();
   </script>
 </body>
 </html>
