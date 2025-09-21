@@ -2,10 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>📊 Trade Data Viewer</title>
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
+  <title>Trade Data Viewer (Auto Refresh)</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
     h1 { margin-bottom: 10px; }
@@ -19,33 +16,35 @@
     #refreshBtn { padding: 10px 15px; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
     #refreshBtn:hover { opacity: 0.9; }
     #search { margin-top: 10px; padding: 8px; width: 50%; }
-    #lastUpdate { font-size: 0.9em; color: #555; margin-top: 8px; }
   </style>
 </head>
 <body>
   <h1>📊 Trade Data Viewer</h1>
-  <div id="status">⏳ Memuat data...</div>
-  <button id="refreshBtn">🔄 Refresh Data</button>
+  <div id="status">Memuat data...</div>
+  <button id="refreshBtn">🔄 Refresh Manual</button>
   <input type="text" id="search" placeholder="Ketik untuk mencari...">
-  <div id="lastUpdate"></div>
   <div id="preview"></div>
 
   <script>
     const FILE_URL = "https://raw.githubusercontent.com/kijangweb/probpair/main/tradeData.json";
+    let lastDataHash = "";
 
-    async function loadData(manual=false) {
+    async function loadData(auto=false) {
       try {
-        const res = await fetch(FILE_URL + "?t=" + Date.now(), {
-          cache: "no-store"
-        });
-        if (!res.ok) throw new Error("Gagal fetch data: " + res.status);
-
+        const res = await fetch(FILE_URL + "?t=" + Date.now());
+        if (!res.ok) throw new Error("Gagal fetch data");
         const data = await res.json();
-        renderPreview(data);
 
-        const now = new Date().toLocaleTimeString();
-        document.getElementById("status").innerText = "✅ Data berhasil dimuat.";
-        document.getElementById("lastUpdate").innerText = `Terakhir update: ${now}${manual ? " (manual)" : ""}`;
+        // cek apakah data baru atau sama
+        const newHash = JSON.stringify(data);
+        if (newHash !== lastDataHash) {
+          renderPreview(data);
+          lastDataHash = newHash;
+          document.getElementById("status").innerText = 
+            auto ? "🔄 Auto-refresh: Data diperbarui!" : "✅ Data berhasil dimuat.";
+        } else if (!auto) {
+          document.getElementById("status").innerText = "ℹ️ Tidak ada perubahan data.";
+        }
       } catch (err) {
         document.getElementById("status").innerText = "❌ Error: " + err.message;
       }
@@ -59,8 +58,13 @@
       }
 
       const keys = Object.keys(data[0]);
-      let html = `<table><thead><tr>`;
-      keys.forEach(k => html += `<th>${k}</th>`);
+      let html = `
+        <table>
+          <thead><tr>
+      `;
+      keys.forEach(k => {
+        html += `<th>${k}</th>`;
+      });
       html += `</tr></thead><tbody id="tableBody"></tbody></table>`;
       container.innerHTML = html;
 
@@ -69,7 +73,9 @@
         body.innerHTML = "";
         rows.forEach(row => {
           let tr = "<tr>";
-          keys.forEach(k => tr += `<td>${row[k]}</td>`);
+          keys.forEach(k => {
+            tr += `<td>${row[k]}</td>`;
+          });
           tr += "</tr>";
           body.innerHTML += tr;
         });
@@ -78,7 +84,7 @@
       renderRows(data);
 
       // search filter
-      document.getElementById("search").oninput = e => {
+      document.getElementById("search").addEventListener("input", e => {
         const q = e.target.value.toLowerCase();
         const filtered = data.filter(obj =>
           Object.values(obj).some(val =>
@@ -86,17 +92,17 @@
           )
         );
         renderRows(filtered);
-      };
+      });
     }
 
-    // tombol manual
-    document.getElementById("refreshBtn").addEventListener("click", () => loadData(true));
+    // tombol manual refresh
+    document.getElementById("refreshBtn").addEventListener("click", () => loadData(false));
+
+    // auto refresh setiap 15 detik
+    setInterval(() => loadData(true), 15000);
 
     // load awal
-    loadData();
-
-    // auto refresh tiap 15 detik
-    setInterval(loadData, 15000);
+    loadData(false);
   </script>
 </body>
 </html>
