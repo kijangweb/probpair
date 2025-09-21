@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,83 +7,42 @@
 <style>
 body { font-family: Arial, sans-serif; padding: 20px; }
 table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-th, td { border: 1px solid #ccc; padding: 8px; text-align: left; cursor: pointer; }
+th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
 th { background-color: #f0f0f0; }
 tr:nth-child(even) { background-color: #fafafa; }
-input { padding: 5px; width: 200px; margin-top: 10px; }
-h1 { margin-bottom: 0; }
 </style>
 </head>
 <body>
-
 <h1>Trade Data</h1>
-<label for="searchInput">Filter:</label>
-<input type="text" id="searchInput" placeholder="Cari...">
-
 <div id="tableContainer"></div>
-
 <script>
-// JSON terbaru akan digenerate dari lokal
 const tradeData = [
-  {"item": "Apple", "price": 100, "volume": 50},
-  {"item": "Banana", "price": 50, "volume": 30},
-  {"item": "Cherry", "price": 200, "volume": 20}
-];
-
-let currentSortKey = null;
-let sortAsc = true;
-
-// Render tabel
-function renderTable(data) {
-  const container = document.getElementById('tableContainer');
-  if (!Array.isArray(data) || data.length === 0) {
-    container.innerHTML = "<p>Data kosong</p>";
-    return;
+  {
+    "item": "Apple",
+    "price": 100,
+    "volume": 50
+  },
+  {
+    "item": "Banana",
+    "price": 50,
+    "volume": 30
   }
-
-  const keys = Object.keys(data[0]);
+];
+function renderTable(jsonArray) {
+  const container = document.getElementById('tableContainer');
+  if (!Array.isArray(jsonArray) || jsonArray.length === 0) { container.innerHTML = "<p>Data kosong</p>"; return; }
+  const keys = Object.keys(jsonArray[0]);
   let html = '<table><thead><tr>';
-  keys.forEach(key => {
-    html += `<th onclick="sortTable('${key}')">${key}</th>`;
-  });
+  keys.forEach(key => { html += '<th>' + key + '</th>'; });
   html += '</tr></thead><tbody>';
-
-  data.forEach(obj => {
-    html += '<tr>';
-    keys.forEach(key => { html += `<td>${obj[key] !== undefined ? obj[key] : ''}</td>`; });
+  jsonArray.forEach(obj => {
+    html += '<tr>'; keys.forEach(key => { html += '<td>' + (obj[key] !== undefined ? obj[key] : '') + '</td>'; });
     html += '</tr>';
   });
-
   html += '</tbody></table>';
   container.innerHTML = html;
 }
-
-// Sort fungsi
-function sortTable(key) {
-  if (currentSortKey === key) sortAsc = !sortAsc;
-  else { currentSortKey = key; sortAsc = true; }
-
-  tradeData.sort((a,b) => {
-    if(a[key] < b[key]) return sortAsc ? -1 : 1;
-    if(a[key] > b[key]) return sortAsc ? 1 : -1;
-    return 0;
-  });
-  renderTable(filteredData());
-}
-
-// Filter fungsi
-function filteredData() {
-  const query = document.getElementById('searchInput').value.toLowerCase();
-  if (!query) return tradeData;
-  return tradeData.filter(obj => Object.values(obj).some(val => String(val).toLowerCase().includes(query)));
-}
-
-// Event filter
-document.getElementById('searchInput').addEventListener('input', () => renderTable(filteredData()));
-
-// Initial render
 renderTable(tradeData);
 </script>
-
 </body>
 </html>
