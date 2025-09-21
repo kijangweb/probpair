@@ -21,19 +21,25 @@ tr:hover{background-color:#f1f1f1;}
 </head>
 <body>
 <h1>📊 Trade Data Viewer</h1>
-<div id="status">Memuat data...</div>
+<div id="status">Menunggu refresh...</div>
 <button id="refreshBtn">🔄 Refresh Data</button>
 <input type="text" id="search" placeholder="Ketik untuk mencari...">
 <div id="preview"></div>
-<div id="timer">⏳ Menunggu update...</div>
+<div id="timer">⏳ Terakhir refresh: - detik</div>
 
 <script>
-const REPO_OWNER="kijangweb",REPO_NAME="probpair",FILE_PATH="tradeData.json",BRANCH="main";
+const REPO_OWNER="kijangweb";
+const REPO_NAME="probpair";
+const FILE_PATH="tradeData.json";
+const BRANCH="main";
+
 const API_URL=`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`;
 const RAW_URL=`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}/${FILE_PATH}`;
 
-let lastData=null,timerSec=0,TIMER_MAX=30;
+let lastData=null;
+let secondsSinceRefresh=0;
 
+// render preview
 function renderPreview(data){
   const container=document.getElementById("preview");
   if(!Array.isArray(data)||data.length===0){container.innerHTML="<p>Data kosong</p>";return;}
@@ -43,7 +49,7 @@ function renderPreview(data){
   container.innerHTML=html;
   const renderRows=rows=>{
     const body=document.getElementById("tableBody"); body.innerHTML="";
-    rows.forEach(row=>{let tr="<tr>";keys.forEach(k=>tr+=`<td>${row[k]}</td>`);tr+="</tr>";body.innerHTML+=tr;});
+    rows.forEach(row=>{let tr="<tr>"; keys.forEach(k=>tr+=`<td>${row[k]}</td>`); tr+="</tr>"; body.innerHTML+=tr;});
   }
   renderRows(data);
   document.getElementById("search").addEventListener("input",e=>{
@@ -53,45 +59,53 @@ function renderPreview(data){
   });
 }
 
-async function loadData(){
+// fetch data
+async function fetchData(){
+  document.getElementById("status").innerText="⏳ Memuat data terbaru...";
   try{
-    const res=await fetch(API_URL);
-    if(!res.ok)throw new Error("API gagal");
+    const res=await fetch(API_URL + "&t="+Date.now());
+    if(!res.ok) throw new Error("API gagal");
     const json=await res.json();
     const data=JSON.parse(atob(json.content));
     handleUpdate(data,"API");
   }catch(err){
-    console.warn("API error:",err.message);
     try{
       const resRaw=await fetch(RAW_URL+"?t="+Date.now());
-      if(!resRaw.ok)throw new Error("Raw fetch gagal");
+      if(!resRaw.ok) throw new Error("Raw gagal");
       const data=await resRaw.json();
       handleUpdate(data,"CDN fallback");
     }catch(err2){
-      document.getElementById("status").innerText="❌ Error total: "+err2.message;
+      document.getElementById("status").innerText="❌ Gagal fetch data: "+err2.message;
     }
   }
 }
 
+// handle update
 function handleUpdate(data,source){
   if(JSON.stringify(data)!==JSON.stringify(lastData)){
-    const delaySec=timerSec;
     lastData=data;
     renderPreview(data);
+    document.getElementById("status").innerText=`✅ Data terbaru (${source})`;
+    secondsSinceRefresh=0;
     const preview=document.getElementById("preview");
     preview.style.background="#d4edda";
     setTimeout(()=>{preview.style.background="#fff";},500);
-    document.getElementById("status").innerText=`✅ Data baru (${source}) setelah ${delaySec} detik`;
-    timerSec=0;
+  } else {
+    document.getElementById("status").innerText=`ℹ️ Data sama (${source})`;
   }
 }
 
-function startTimer(){setInterval(()=>{timerSec++;if(timerSec>TIMER_MAX)timerSec=0;document.getElementById("timer").innerText=`⏳ Menunggu update... (${timerSec} detik)`;},1000);}
+// timer countdown since last refresh
+setInterval(()=>{
+  secondsSinceRefresh++;
+  document.getElementById("timer").innerText=`⏳ Terakhir refresh: ${secondsSinceRefresh} detik`;
+},1000);
 
-document.getElementById("refreshBtn").addEventListener("click",loadData);
-setInterval(loadData,5000);
-loadData();
-startTimer();
+// tombol manual refresh
+document.getElementById("refreshBtn").addEventListener("click",fetchData);
+
+// load pertama kali
+fetchData();
 </script>
 </body>
 </html>
