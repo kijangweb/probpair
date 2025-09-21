@@ -8,10 +8,5 @@
     "item": "Banana",
     "price": 50,
     "volume": 30
-  },
-  {
-    "item": "Cherry",
-    "price": 200,
-    "volume": 20
   }
 ]
