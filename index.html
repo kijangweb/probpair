@@ -7,7 +7,7 @@
 <style>
 :root{
   --primary-bg:#121212; --text:#fff; --accent:#ffd700; --accent-light:#ffe066;
-  --card-bg:#1e1e1e; --button-bg:#ffd700; --button-hover:#ffec70;
+  --card-bg:#1e1e1e;
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;}
 body{background:var(--primary-bg);color:var(--text);padding:20px;}
@@ -16,17 +16,12 @@ body{background:var(--primary-bg);color:var(--text);padding:20px;}
 h2{margin-bottom:15px;font-weight:600;color:var(--accent);}
 h3{margin:15px 0 8px;font-weight:500;color:var(--accent-light);}
 .levels{display:grid;grid-template-columns:1fr 1fr;gap:10px 15px;margin-bottom:15px;}
-.level{padding:10px 12px;border-radius:10px;display:flex;justify-content:space-between;font-weight:500;background:#2a2a2a;cursor:pointer;transition:.2s;user-select:text;}
-.level:hover{background:#3a3a3a;color:var(--accent);}
-.trade{padding:12px 15px;border-radius:12px;margin-bottom:10px;font-weight:500;cursor:pointer;transition:.2s;}
+.level{padding:10px 12px;border-radius:10px;display:flex;justify-content:space-between;font-weight:500;background:#2a2a2a;user-select:text;}
+.trade{padding:12px 15px;border-radius:12px;margin-bottom:10px;font-weight:500;}
 .long{background:var(--accent);color:#000;}
 .short{background:#b8860b;color:#fff;}
 .sideways{background:var(--accent-light);color:#000;}
-.trade:hover{opacity:.85;transform:scale(1.02);}
 .risk{margin-top:15px;padding:12px;border-radius:12px;background:#2a2a2a;color:#fff;}
-button{padding:10px 18px;border:none;border-radius:8px;cursor:pointer;background:var(--button-bg);color:#000;font-weight:600;margin-top:10px;transition:.2s;margin-right:5px;margin-bottom:5px;}
-button:hover{background:var(--button-hover);}
-textarea, input{width:100%;margin-top:10px;padding:10px;border-radius:8px;background:#2a2a2a;color:#fff;border:none;font-family:monospace;font-size:14px;}
 pre{background:#2a2a2a;padding:15px;border-radius:10px;overflow-x:auto;margin-top:15px;font-size:14px;color:#fff;}
 table{width:100%;border-collapse:collapse;margin-top:15px;}
 table,th,td{border:1px solid #444;}
@@ -53,7 +48,6 @@ th{background:#2a2a2a;color:var(--accent-light);}
       <div class="level">Resistance Intraday<span id="rIntraday"></span></div>
       <div class="level">Resistance Kuat<span id="rKuat"></span></div>
     </div>
-    <button onclick="copyLevels()">📋 Salin Level</button>
 
     <h3>Quick Trade Triggers</h3>
     <div class="trade long" id="tLong"></div>
@@ -90,27 +84,21 @@ th{background:#2a2a2a;color:var(--accent-light);}
       </tr>
     </table>
 
-    <h3>Update / Import JSON</h3>
-    <textarea id="jsonInput" placeholder="Paste JSON di sini untuk update..."></textarea>
-    <input type="password" id="pinInput" placeholder="Masukkan PIN"/>
-    <button onclick="updateRepo()">🔄 Update Repo</button>
   </div>
 </div>
 
 <script>
 let countdownTimer;
-const backendURL = 'http://localhost:3000/update-json'; // backend Node.js
-const jsonURL = 'tradeData.json'; // file JSON di repo GitHub Pages
+const RAW_JSON_URL = 'https://raw.githubusercontent.com/USERNAME/REPO_NAME/main/tradeData.json';
 
-// --- Fetch JSON dari repo ---
-async function fetchData() {
-  try {
-    const res = await fetch(jsonURL);
-    if (!res.ok) throw new Error('Gagal load JSON');
-    return await res.json();
-  } catch (e) {
-    console.error(e);
-    return null;
+// --- Fetch JSON from GitHub ---
+async function fetchData(){
+  try{
+    const res = await fetch(RAW_JSON_URL);
+    const data = await res.json();
+    updateUI(data);
+  }catch(err){
+    console.error("Gagal fetch JSON:", err);
   }
 }
 
@@ -118,82 +106,51 @@ async function fetchData() {
 function startCountdown(validUntil) {
   clearInterval(countdownTimer);
   countdownTimer = setInterval(() => {
+    if(!validUntil) return;
     const now = new Date();
     const end = new Date(validUntil);
     const diff = end - now;
-    if (diff <= 0) {
+    if(diff <= 0){
       clearInterval(countdownTimer);
       document.getElementById('countdown').textContent = "Expired";
       return;
     }
-    const h = String(Math.floor(diff/1000/60/60)).padStart(2,'0');
-    const m = String(Math.floor((diff/1000/60)%60)).padStart(2,'0');
-    const s = String(Math.floor((diff/1000)%60)).padStart(2,'0');
-    document.getElementById('countdown').textContent = `${h}:${m}:${s}`;
+    const hours = String(Math.floor(diff / 1000 / 60 / 60)).padStart(2,'0');
+    const minutes = String(Math.floor((diff / 1000 / 60) % 60)).padStart(2,'0');
+    const seconds = String(Math.floor((diff / 1000) % 60)).padStart(2,'0');
+    document.getElementById('countdown').textContent = `${hours}:${minutes}:${seconds}`;
   }, 1000);
 }
 
 // --- Update UI ---
-function updateUI(data){
-  document.getElementById("pair").textContent = data.pair;
-  document.getElementById("spot").textContent = data.spot;
+function updateUI(tradeData){
+  document.getElementById("pair").textContent = tradeData.pair || '';
+  document.getElementById("spot").textContent = tradeData.spot || '';
   document.getElementById("timestamp").textContent = new Date().toLocaleString();
-  document.getElementById("bias").textContent = data.bias;
-  document.getElementById("ema").textContent = data.emaAlignment;
-  document.getElementById("sIntraday").textContent = data.levels.supportIntraday;
-  document.getElementById("sKritis").textContent = data.levels.supportKritis;
-  document.getElementById("rIntraday").textContent = data.levels.resistanceIntraday;
-  document.getElementById("rKuat").textContent = data.levels.resistanceKuat;
-  document.getElementById("tLong").textContent = `Long: Trigger ${data.quickTrade.long.trigger}, Entry ${data.quickTrade.long.entry}, TP ${data.quickTrade.long.tp}, SL ${data.quickTrade.long.sl}`;
-  document.getElementById("tShort").textContent = `Short: ${data.quickTrade.short.trigger}, Entry ${data.quickTrade.short.entry}, TP ${data.quickTrade.short.tp}, SL ${data.quickTrade.short.sl}`;
-  document.getElementById("tSideways").textContent = `Sideways: ${data.quickTrade.sideways.range}, ${data.quickTrade.sideways.strategy}`;
-  document.getElementById("riskText").textContent = `Risk Management: ${data.risk}`;
-  document.getElementById("sentiment").textContent = data.fundamental.sentiment;
-  document.getElementById("risk").textContent = data.fundamental.risk;
-  document.getElementById("projection").textContent = data.fundamental.projection;
-  document.getElementById("cBias").textContent = data.conclusion.bias;
-  document.getElementById("cStrategy").textContent = data.conclusion.strategy;
-  document.getElementById("cNotes").textContent = data.conclusion.notes;
-  startCountdown(data.validUntil);
-}
-
-// --- Copy level ---
-function copyLevels() {
-  const levels = [
-    document.getElementById("sIntraday").textContent,
-    document.getElementById("sKritis").textContent,
-    document.getElementById("rIntraday").textContent,
-    document.getElementById("rKuat").textContent
-  ].join("\n");
-  navigator.clipboard.writeText(levels).then(_ => alert("Key levels berhasil disalin!"));
-}
-
-// --- Update JSON via backend ---
-async function updateRepo() {
-  const pin = document.getElementById("pinInput").value;
-  const jsonInput = document.getElementById("jsonInput").value;
-  if (!pin || !jsonInput) return alert("Masukkan PIN dan JSON");
-
-  try {
-    const newData = JSON.parse(jsonInput);
-    const res = await fetch(backendURL, {
-      method: 'POST',
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pin, newData })
-    });
-    const result = await res.json();
-    alert(result.message);
-  } catch(err) {
-    console.error(err);
-    alert("Gagal update JSON: " + err.message);
-  }
+  document.getElementById("bias").textContent = tradeData.bias || '';
+  document.getElementById("ema").textContent = tradeData.emaAlignment || '';
+  document.getElementById("sIntraday").textContent = tradeData.levels?.supportIntraday || '';
+  document.getElementById("sKritis").textContent = tradeData.levels?.supportKritis || '';
+  document.getElementById("rIntraday").textContent = tradeData.levels?.resistanceIntraday || '';
+  document.getElementById("rKuat").textContent = tradeData.levels?.resistanceKuat || '';
+  document.getElementById("tLong").textContent = tradeData.quickTrade?.long
+    ? `Long: Trigger ${tradeData.quickTrade.long.trigger}, Entry ${tradeData.quickTrade.long.entry}, TP ${tradeData.quickTrade.long.tp}, SL ${tradeData.quickTrade.long.sl}` : '';
+  document.getElementById("tShort").textContent = tradeData.quickTrade?.short
+    ? `Short: Trigger ${tradeData.quickTrade.short.trigger}, Entry ${tradeData.quickTrade.short.entry}, TP ${tradeData.quickTrade.short.tp}, SL ${tradeData.quickTrade.short.sl}` : '';
+  document.getElementById("tSideways").textContent = tradeData.quickTrade?.sideways
+    ? `Sideways/Range: ${tradeData.quickTrade.sideways.range}, ${tradeData.quickTrade.sideways.strategy}` : '';
+  document.getElementById("riskText").textContent = `Risk Management: ${tradeData.risk || ''}`;
+  document.getElementById("sentiment").textContent = tradeData.fundamental?.sentiment || '';
+  document.getElementById("risk").textContent = tradeData.fundamental?.risk || '';
+  document.getElementById("projection").textContent = tradeData.fundamental?.projection || '';
+  document.getElementById("cBias").textContent = tradeData.conclusion?.bias || '';
+  document.getElementById("cStrategy").textContent = tradeData.conclusion?.strategy || '';
+  document.getElementById("cNotes").textContent = tradeData.conclusion?.notes || '';
+  startCountdown(tradeData.validUntil);
 }
 
 // --- Initialize ---
-(async ()=>{
-  const data = await fetchData();
-  if(data) updateUI(data);
-})();
+fetchData();
 </script>
 
 </body>
