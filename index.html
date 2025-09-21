@@ -14,7 +14,6 @@ th{background-color:#f0f0f0;}
 tr:nth-child(even){background-color:#f9f9f9;}
 tr:hover{background-color:#f1f1f1;}
 #search{margin-top:10px;padding:8px;width:50%;}
-#timer{margin-top:10px;font-size:14px;color:#555;}
 #refreshBtn{padding:10px 15px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;}
 #refreshBtn:hover{opacity:0.9;}
 </style>
@@ -25,22 +24,13 @@ tr:hover{background-color:#f1f1f1;}
 <button id="refreshBtn">🔄 Refresh Data</button>
 <input type="text" id="search" placeholder="Ketik untuk mencari...">
 <div id="preview"></div>
-<div id="timer">⏳ Terakhir refresh: - detik</div>
 
+<script src="config.js"></script>
 <script>
-const REPO_OWNER="kijangweb";
-const REPO_NAME="probpair";
-const FILE_PATH="tradeData.json";
-const BRANCH="main";
-
-const API_URL=`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`;
-const RAW_URL=`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}/${FILE_PATH}`;
-
 let lastData = null;
 let lastSHA = null;
-let secondsSinceRefresh = 0;
 
-// Render preview table
+// Render tabel preview
 function renderPreview(data){
   const container=document.getElementById("preview");
   if(!Array.isArray(data)||data.length===0){container.innerHTML="<p>Data kosong</p>";return;}
@@ -48,13 +38,13 @@ function renderPreview(data){
   let html=`<table><thead><tr>`;
   keys.forEach(k=>html+=`<th>${k}</th>`); html+=`</tr></thead><tbody id="tableBody"></tbody></table>`;
   container.innerHTML=html;
+
   const renderRows=rows=>{
     const body=document.getElementById("tableBody"); body.innerHTML="";
     rows.forEach(row=>{let tr="<tr>"; keys.forEach(k=>tr+=`<td>${row[k]}</td>`); tr+="</tr>"; body.innerHTML+=tr;});
   }
   renderRows(data);
 
-  // Search/filter
   document.getElementById("search").addEventListener("input", e=>{
     const q=e.target.value.toLowerCase();
     const filtered=data.filter(obj=>Object.values(obj).some(val=>String(val).toLowerCase().includes(q)));
@@ -62,59 +52,39 @@ function renderPreview(data){
   });
 }
 
-// Fetch data from API + fallback raw URL
+// Fetch data authenticated + show last commit timestamp
 async function fetchData(){
   const status=document.getElementById("status");
   status.innerText="⏳ Memeriksa update…";
   try{
-    const res=await fetch(API_URL+"&t="+Date.now());
-    if(!res.ok) throw new Error("API gagal");
+    const res=await fetch(`https://api.github.com/repos/${CONFIG.REPO_OWNER}/${CONFIG.REPO_NAME}/contents/${CONFIG.FILE_PATH}?ref=${CONFIG.BRANCH}&t=${Date.now()}`,{
+      headers:{
+        "Authorization": `token ${CONFIG.GITHUB_TOKEN}`,
+        "Accept": "application/vnd.github.v3+json"
+      }
+    });
     const json=await res.json();
     const data=JSON.parse(atob(json.content));
     const sha=json.sha;
+    const commitDate=json.commit ? new Date(json.commit.author.date).toLocaleString() : "-";
 
-    if(sha === lastSHA){
-      status.innerText="⏳ Menunggu update… (progress di repo masih sama)";
+    if(sha===lastSHA){
+      status.innerText=`⏳ Data sama (last update: ${commitDate})`;
     } else {
       lastSHA=sha;
       lastData=data;
       renderPreview(data);
-      status.innerText="✅ Data baru berhasil di-load!";
+      status.innerText=`✅ Data baru berhasil di-load (last update: ${commitDate})`;
       const preview=document.getElementById("preview");
       preview.style.background="#d4edda";
       setTimeout(()=>{preview.style.background="#fff";},500);
-      secondsSinceRefresh=0;
     }
   }catch(err){
-    // fallback ke raw URL
-    try{
-      const resRaw=await fetch(RAW_URL+"?t="+Date.now());
-      if(!resRaw.ok) throw new Error("Raw gagal");
-      const data=await resRaw.json();
-      if(JSON.stringify(data) === JSON.stringify(lastData)){
-        status.innerText="⏳ Menunggu update… (progress di CDN masih sama)";
-      } else {
-        lastData=data;
-        renderPreview(data);
-        status.innerText="✅ Data baru berhasil di-load (CDN fallback)";
-        const preview=document.getElementById("preview");
-        preview.style.background="#d4edda";
-        setTimeout(()=>{preview.style.background="#fff";},500);
-        secondsSinceRefresh=0;
-      }
-    }catch(err2){
-      status.innerText="❌ Gagal fetch data: "+err2.message;
-    }
+    status.innerText="❌ Gagal fetch data: "+err.message;
   }
 }
 
-// Countdown timer since last refresh
-setInterval(()=>{
-  secondsSinceRefresh++;
-  document.getElementById("timer").innerText=`⏳ Terakhir refresh: ${secondsSinceRefresh} detik`;
-},1000);
-
-// Manual refresh button
+// Tombol manual refresh
 document.getElementById("refreshBtn").addEventListener("click",fetchData);
 
 // Load pertama kali
