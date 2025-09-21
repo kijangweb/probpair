@@ -2,87 +2,103 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Trade Data Viewer</title>
+<title>GitHub JSON Auto-Refresh Viewer</title>
 <style>
-body { font-family: Arial; padding:20px; background:#f4f4f4 }
-table { border-collapse: collapse; width:100%; margin-top:10px }
-th, td { border:1px solid #ddd; padding:8px; text-align:left }
-th { background:#f0f0f0 }
-tr:nth-child(even){background:#f9f9f9}
-tr:hover{background:#f1f1f1}
-#status{margin-bottom:10px;font-weight:bold}
-#refreshBtn{padding:10px 15px; background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer}
-#refreshBtn:hover{opacity:0.9}
-#search{margin-top:10px;padding:8px;width:50%}
+body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
+#preview { margin-top: 20px; padding: 15px; background: #fff; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: background 0.3s; }
+table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+th { background-color: #f0f0f0; }
+tr:nth-child(even) { background-color: #f9f9f9; }
+tr:hover { background-color: #f1f1f1; }
+#search { margin-top: 10px; padding: 8px; width: 50%; }
+#status { margin-top: 10px; font-weight: bold; }
 </style>
 </head>
 <body>
-<h1>📊 Trade Data Viewer</h1>
-<div id="status">Memuat data...</div>
-<button id="refreshBtn">🔄 Refresh Data</button>
+
+<h1>📊 GitHub JSON Auto-Refresh Viewer</h1>
 <input type="text" id="search" placeholder="Ketik untuk mencari...">
+<div id="status"></div>
 <div id="preview"></div>
-<div id="lastUpdate"></div>
 
+<script src="config.js"></script>
 <script>
-const PROXY_URL = "/api/tradeData";
-const LAST_UPDATE_URL = "/api/lastUpdate";
-
-async function fetchData() {
-  document.getElementById("status").innerText = "⏳ Memuat data...";
-  try {
-    const res = await fetch(PROXY_URL + "?t=" + Date.now());
-    if(!res.ok) throw new Error(res.status);
-    const data = await res.json();
-    renderTable(data);
-    document.getElementById("status").innerText = "✅ Data berhasil dimuat";
-  } catch(err) {
-    document.getElementById("status").innerText = "❌ Error: " + err.message;
-  }
-  fetchLastUpdate();
+let CONFIG_OK = false;
+try {
+  if (typeof CONFIG === "undefined") {
+    document.getElementById("preview").innerText = "❌ config.js tidak ditemukan!";
+  } else CONFIG_OK = true;
+} catch {
+  document.getElementById("preview").innerText = "❌ config.js error!";
 }
 
-function renderTable(data) {
+let lastData = [];
+
+function renderTable(data){
+  lastData = data; // simpan untuk filter search
   const container = document.getElementById("preview");
-  if(!Array.isArray(data) || data.length===0){container.innerHTML="<p>Data kosong</p>";return;}
+  if(!Array.isArray(data) || data.length===0){ container.innerHTML="<p>Data kosong</p>"; return; }
   const keys = Object.keys(data[0]);
-  let html = "<table><thead><tr>";
+  let html = `<table><thead><tr>`;
   keys.forEach(k=>html+=`<th>${k}</th>`);
-  html+="</tr></thead><tbody id='tableBody'></tbody></table>";
-  container.innerHTML = html;
+  html+=`</tr></thead><tbody id="tableBody"></tbody></table>`;
+  container.innerHTML=html;
+
+  const renderRows=rows=>{
+    const body=document.getElementById("tableBody");
+    body.innerHTML="";
+    rows.forEach(row=>{
+      let tr="<tr>"; 
+      keys.forEach(k=>tr+=`<td>${row[k]}</td>`); 
+      tr+="</tr>"; 
+      body.innerHTML+=tr;
+    });
+  }
+
   renderRows(data);
 
   document.getElementById("search").addEventListener("input", e=>{
     const q = e.target.value.toLowerCase();
-    const filtered = data.filter(obj=>Object.values(obj).some(val=>String(val).toLowerCase().includes(q)));
+    const filtered = lastData.filter(obj => Object.values(obj).some(val => String(val).toLowerCase().includes(q)));
     renderRows(filtered);
   });
 }
 
-function renderRows(rows){
-  const body = document.getElementById("tableBody");
-  body.innerHTML="";
-  rows.forEach(row=>{
-    let tr="<tr>";
-    Object.values(row).forEach(v=>tr+=`<td>${v}</td>`);
-    tr+="</tr>";
-    body.innerHTML+=tr;
-  });
-}
-
-async function fetchLastUpdate(){
+async function fetchGitHubJSON(){
   try{
-    const res = await fetch(LAST_UPDATE_URL);
-    if(!res.ok) throw new Error(res.status);
+    const res = await fetch(`https://api.github.com/repos/${CONFIG.REPO_OWNER}/${CONFIG.REPO_NAME}/contents/${CONFIG.FILE_PATH}?ref=${CONFIG.BRANCH}`, {
+      headers: { Authorization: `token ${CONFIG.GITHUB_TOKEN}` }
+    });
+    if(!res.ok) throw new Error("GitHub API gagal");
     const data = await res.json();
-    document.getElementById("lastUpdate").innerText = "Terakhir update repo: " + data.lastUpdate;
+    const decoded = JSON.parse(atob(data.content));
+    renderTable(decoded);
+    document.getElementById("status").innerText = `✅ Data dari GitHub API (refresh: ${new Date().toLocaleTimeString()})`;
   }catch(err){
-    document.getElementById("lastUpdate").innerText = "";
+    console.warn("GitHub API error:", err.message, "Falling back to CDN...");
+    fetchCDNJSON();
   }
 }
 
-document.getElementById("refreshBtn").addEventListener("click", fetchData);
-fetchData();
+async function fetchCDNJSON(){
+  try{
+    const res = await fetch(CONFIG.CDN_URL);
+    if(!res.ok) throw new Error("CDN gagal diakses");
+    const data = await res.json();
+    renderTable(data);
+    document.getElementById("status").innerText = `⚠️ Data dari CDN (API gagal) - ${new Date().toLocaleTimeString()}`;
+  }catch(err){
+    document.getElementById("preview").innerText = "❌ Gagal load data dari API dan CDN: "+err.message;
+  }
+}
+
+function autoRefresh(interval=30000){
+  fetchGitHubJSON(); // fetch pertama
+  setInterval(fetchGitHubJSON, interval);
+}
+
+if(CONFIG_OK) autoRefresh();
 </script>
 </body>
 </html>
