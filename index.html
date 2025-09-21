@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Trade Data Viewer (API Realtime)</title>
+  <title>Trade Data Viewer (API + Raw Fallback)</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
     h1 { margin-bottom: 10px; }
@@ -16,6 +16,7 @@
     #refreshBtn { padding: 10px 15px; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
     #refreshBtn:hover { opacity: 0.9; }
     #search { margin-top: 10px; padding: 8px; width: 50%; }
+    #lastUpdated { margin-top: 12px; font-size: 0.9em; color: #555; }
   </style>
 </head>
 <body>
@@ -24,25 +25,45 @@
   <button id="refreshBtn">🔄 Refresh Manual</button>
   <input type="text" id="search" placeholder="Ketik untuk mencari...">
   <div id="preview"></div>
+  <div id="lastUpdated">⏱ Belum ada data.</div>
 
   <script>
-    // Gunakan GitHub API (bukan raw CDN)
     const API_URL = "https://api.github.com/repos/kijangweb/probpair/contents/tradeData.json?ref=main";
+    const RAW_URL = "https://raw.githubusercontent.com/kijangweb/probpair/main/tradeData.json";
 
     async function loadData(auto=false) {
       try {
+        // 1. Coba lewat API
         const res = await fetch(API_URL);
-        if (!res.ok) throw new Error("Gagal fetch API");
+        if (!res.ok) throw new Error("API Error: " + res.status);
         const json = await res.json();
 
-        // Decode base64 → string → JSON
+        if (json.message && json.message.includes("API rate limit exceeded")) {
+          throw new Error("RateLimit");
+        }
+
         const decoded = JSON.parse(atob(json.content));
         renderPreview(decoded);
+        updateTimestamp("API");
 
-        document.getElementById("status").innerText = 
-          auto ? "🔄 Auto-refresh: Data diperbarui!" : "✅ Data berhasil dimuat.";
+        document.getElementById("status").innerText =
+          auto ? "🔄 Auto-refresh (API): Data diperbarui!" : "✅ Data dimuat dari API.";
       } catch (err) {
-        document.getElementById("status").innerText = "❌ Error: " + err.message;
+        console.warn("API gagal:", err.message);
+
+        // 2. Fallback ke RAW
+        try {
+          const resRaw = await fetch(RAW_URL + "?t=" + Date.now());
+          if (!resRaw.ok) throw new Error("Raw fetch gagal");
+          const data = await resRaw.json();
+          renderPreview(data);
+          updateTimestamp("RAW");
+
+          document.getElementById("status").innerText =
+            auto ? "🔄 Auto-refresh (RAW): Data diperbarui (fallback)." : "✅ Data dimuat dari RAW (fallback).";
+        } catch (err2) {
+          document.getElementById("status").innerText = "❌ Error total: " + err2.message;
+        }
       }
     }
 
@@ -79,7 +100,6 @@
 
       renderRows(data);
 
-      // search filter
       document.getElementById("search").addEventListener("input", e => {
         const q = e.target.value.toLowerCase();
         const filtered = data.filter(obj =>
@@ -91,13 +111,17 @@
       });
     }
 
-    // tombol manual refresh
+    function updateTimestamp(source) {
+      const now = new Date();
+      const formatted = now.toLocaleString();
+      document.getElementById("lastUpdated").innerText =
+        `⏱ Terakhir diperbarui: ${formatted} (sumber: ${source})`;
+    }
+
     document.getElementById("refreshBtn").addEventListener("click", () => loadData(false));
 
-    // auto refresh tiap 15 detik
     setInterval(() => loadData(true), 15000);
 
-    // load awal
     loadData(false);
   </script>
 </body>
