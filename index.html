@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,12 +24,23 @@ tr:hover { background-color: #f1f1f1; }
 <div id="tableContainer"></div>
 
 <script>
-// JSON ini akan otomatis digenerate ulang dari lokal
 const tradeData = [
-  {"item": "Apple", "price": 100, "volume": 50},
-  {"item": "Banana", "price": 50, "volume": 30}
+  {
+    "item": "Apple",
+    "price": 100,
+    "volume": 50
+  },
+  {
+    "item": "Banana",
+    "price": 50,
+    "volume": 30
+  },
+  {
+    "item": "Orange",
+    "price": 70,
+    "volume": 40
+  }
 ];
-
 let currentSortKey = null;
 let sortAsc = true;
 
@@ -89,9 +101,7 @@ document.getElementById('searchInput').addEventListener('input', () => {
   renderTable(filteredData());
 });
 
-// Render awal
 renderTable(tradeData);
 </script>
-
 </body>
 </html>
