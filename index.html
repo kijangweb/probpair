@@ -4,49 +4,55 @@
 <meta charset="UTF-8">
 <title>Trade Data Viewer</title>
 <style>
-body{font-family:Arial,sans-serif;padding:20px;background:#f4f4f4;}
-h1{margin-bottom:10px;}
-#status{margin-bottom:10px;font-weight:bold;}
-#preview{padding:15px;background:#fff;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,0.1);transition:background 0.3s;}
-table{border-collapse:collapse;width:100%;margin-top:10px;}
-th,td{border:1px solid #ddd;padding:8px;text-align:left;}
-th{background-color:#f0f0f0;}
-tr:nth-child(even){background-color:#f9f9f9;}
-tr:hover{background-color:#f1f1f1;}
-#search{margin-top:10px;padding:8px;width:50%;}
-#refreshBtn{padding:10px 15px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;}
-#refreshBtn:hover{opacity:0.9;}
-.flash{background:#d4edda;}
+body { font-family: Arial; padding: 20px; background:#f4f4f4 }
+table { border-collapse: collapse; width:100%; margin-top:10px }
+th, td { border:1px solid #ddd; padding:8px; text-align:left }
+th { background:#f0f0f0 }
+tr:nth-child(even){background:#f9f9f9}
+tr:hover{background:#f1f1f1}
+#status{margin-bottom:10px;font-weight:bold}
+#refreshBtn{padding:10px 15px; background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer}
+#refreshBtn:hover{opacity:0.9}
+#search{margin-top:10px;padding:8px;width:50%}
 </style>
 </head>
 <body>
-
 <h1>📊 Trade Data Viewer</h1>
-<div id="status">Memuat data…</div>
+<div id="status">Memuat data...</div>
 <button id="refreshBtn">🔄 Refresh Data</button>
 <input type="text" id="search" placeholder="Ketik untuk mencari...">
 <div id="preview"></div>
+<div id="lastUpdate"></div>
 
 <script>
-const PROXY_URL = "http://localhost:3000/api/tradeData"; // server proxy
-const RAW_URL = "https://raw.githubusercontent.com/kijangweb/probpair/main/tradeData.json"; // fallback
-let lastSHA = null;
+const PROXY_URL = "http://localhost:3000/api/tradeData";
+const LAST_UPDATE_URL = "http://localhost:3000/api/lastUpdate";
 
-// render tabel
-function renderPreview(data){
-  const container = document.getElementById("preview");
-  if(!Array.isArray(data)||data.length===0){container.innerHTML="<p>Data kosong</p>";return;}
-  const keys = Object.keys(data[0]);
-  let html=`<table><thead><tr>`;
-  keys.forEach(k=>html+=`<th>${k}</th>`); html+=`</tr></thead><tbody id="tableBody"></tbody></table>`;
-  container.innerHTML = html;
-
-  const renderRows = rows => {
-    const body = document.getElementById("tableBody"); body.innerHTML="";
-    rows.forEach(row=>{let tr="<tr>"; keys.forEach(k=>tr+=`<td>${row[k]}</td>`); tr+="</tr>"; body.innerHTML+=tr;});
+async function fetchData() {
+  document.getElementById("status").innerText = "⏳ Memuat data...";
+  try {
+    const res = await fetch(PROXY_URL + "?t=" + Date.now());
+    if(!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    renderTable(data);
+    document.getElementById("status").innerText = "✅ Data berhasil dimuat";
+  } catch(err) {
+    document.getElementById("status").innerText = "❌ Error: " + err.message;
   }
+  fetchLastUpdate();
+}
+
+function renderTable(data) {
+  const container = document.getElementById("preview");
+  if(!Array.isArray(data) || data.length===0){container.innerHTML="<p>Data kosong</p>";return;}
+  const keys = Object.keys(data[0]);
+  let html = "<table><thead><tr>";
+  keys.forEach(k=>html+=`<th>${k}</th>`);
+  html+="</tr></thead><tbody id='tableBody'></tbody></table>";
+  container.innerHTML = html;
   renderRows(data);
 
+  // search filter
   document.getElementById("search").addEventListener("input", e=>{
     const q = e.target.value.toLowerCase();
     const filtered = data.filter(obj=>Object.values(obj).some(val=>String(val).toLowerCase().includes(q)));
@@ -54,52 +60,33 @@ function renderPreview(data){
   });
 }
 
-// fetch data (proxy + fallback)
-async function fetchData(){
-  const status = document.getElementById("status");
-  status.innerText = "⏳ Memeriksa update…";
+function renderRows(rows){
+  const body = document.getElementById("tableBody");
+  body.innerHTML="";
+  rows.forEach(row=>{
+    let tr="<tr>";
+    Object.values(row).forEach(v=>tr+=`<td>${v}</td>`);
+    tr+="</tr>";
+    body.innerHTML+=tr;
+  });
+}
 
+async function fetchLastUpdate(){
   try{
-    let res = await fetch(PROXY_URL);
-    if(!res.ok) throw new Error("Proxy gagal");
-    let json = await res.json();
-
-    if(json.commitSHA === lastSHA){
-      status.innerText = `⏳ Data sama (last update: ${json.commitDate})`;
-      return;
-    }
-
-    lastSHA = json.commitSHA;
-    renderPreview(json.content);
-
-    const preview = document.getElementById("preview");
-    preview.classList.add("flash");
-    setTimeout(()=>preview.classList.remove("flash"),500);
-
-    status.innerText = `✅ Data baru dimuat (last update: ${json.commitDate})`;
-  }catch(e){
-    console.warn("Proxy gagal, fallback raw URL:", e.message);
-    try{
-      let res = await fetch(RAW_URL + "?t=" + Date.now());
-      if(!res.ok) throw new Error("Raw URL gagal");
-      let data = await res.json();
-      renderPreview(data);
-      status.innerText = "⚠️ Proxy gagal, menampilkan data dari raw URL (tidak ada timestamp)";
-    }catch(err){
-      status.innerText = "❌ Tidak bisa fetch data: "+err.message;
-    }
+    const res = await fetch(LAST_UPDATE_URL);
+    if(!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    document.getElementById("lastUpdate").innerText = "Terakhir update repo: " + data.lastUpdate;
+  }catch(err){
+    document.getElementById("lastUpdate").innerText = "";
   }
 }
 
-// tombol refresh manual
+// refresh button
 document.getElementById("refreshBtn").addEventListener("click", fetchData);
 
-// auto refresh tiap 30 detik
-setInterval(fetchData, 30000);
-
-// load awal
+// auto load
 fetchData();
 </script>
-
 </body>
 </html>
