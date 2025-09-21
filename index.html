@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Trade Data Viewer</title>
 <style>
-body { font-family: Arial; padding: 20px; background:#f4f4f4 }
+body { font-family: Arial; padding:20px; background:#f4f4f4 }
 table { border-collapse: collapse; width:100%; margin-top:10px }
 th, td { border:1px solid #ddd; padding:8px; text-align:left }
 th { background:#f0f0f0 }
@@ -25,8 +25,8 @@ tr:hover{background:#f1f1f1}
 <div id="lastUpdate"></div>
 
 <script>
-const PROXY_URL = "http://localhost:3000/api/tradeData";
-const LAST_UPDATE_URL = "http://localhost:3000/api/lastUpdate";
+const PROXY_URL = "/api/tradeData";
+const LAST_UPDATE_URL = "/api/lastUpdate";
 
 async function fetchData() {
   document.getElementById("status").innerText = "⏳ Memuat data...";
@@ -52,7 +52,6 @@ function renderTable(data) {
   container.innerHTML = html;
   renderRows(data);
 
-  // search filter
   document.getElementById("search").addEventListener("input", e=>{
     const q = e.target.value.toLowerCase();
     const filtered = data.filter(obj=>Object.values(obj).some(val=>String(val).toLowerCase().includes(q)));
@@ -82,10 +81,7 @@ async function fetchLastUpdate(){
   }
 }
 
-// refresh button
 document.getElementById("refreshBtn").addEventListener("click", fetchData);
-
-// auto load
 fetchData();
 </script>
 </body>
