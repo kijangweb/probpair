@@ -36,10 +36,11 @@ const BRANCH="main";
 const API_URL=`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`;
 const RAW_URL=`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}/${FILE_PATH}`;
 
-let lastData=null;
-let secondsSinceRefresh=0;
+let lastData = null;
+let lastSHA = null;
+let secondsSinceRefresh = 0;
 
-// render preview
+// Render preview table
 function renderPreview(data){
   const container=document.getElementById("preview");
   if(!Array.isArray(data)||data.length===0){container.innerHTML="<p>Data kosong</p>";return;}
@@ -52,59 +53,71 @@ function renderPreview(data){
     rows.forEach(row=>{let tr="<tr>"; keys.forEach(k=>tr+=`<td>${row[k]}</td>`); tr+="</tr>"; body.innerHTML+=tr;});
   }
   renderRows(data);
-  document.getElementById("search").addEventListener("input",e=>{
+
+  // Search/filter
+  document.getElementById("search").addEventListener("input", e=>{
     const q=e.target.value.toLowerCase();
     const filtered=data.filter(obj=>Object.values(obj).some(val=>String(val).toLowerCase().includes(q)));
     renderRows(filtered);
   });
 }
 
-// fetch data
+// Fetch data from API + fallback raw URL
 async function fetchData(){
-  document.getElementById("status").innerText="⏳ Memuat data terbaru...";
+  const status=document.getElementById("status");
+  status.innerText="⏳ Memeriksa update…";
   try{
-    const res=await fetch(API_URL + "&t="+Date.now());
+    const res=await fetch(API_URL+"&t="+Date.now());
     if(!res.ok) throw new Error("API gagal");
     const json=await res.json();
     const data=JSON.parse(atob(json.content));
-    handleUpdate(data,"API");
+    const sha=json.sha;
+
+    if(sha === lastSHA){
+      status.innerText="⏳ Menunggu update… (progress di repo masih sama)";
+    } else {
+      lastSHA=sha;
+      lastData=data;
+      renderPreview(data);
+      status.innerText="✅ Data baru berhasil di-load!";
+      const preview=document.getElementById("preview");
+      preview.style.background="#d4edda";
+      setTimeout(()=>{preview.style.background="#fff";},500);
+      secondsSinceRefresh=0;
+    }
   }catch(err){
+    // fallback ke raw URL
     try{
       const resRaw=await fetch(RAW_URL+"?t="+Date.now());
       if(!resRaw.ok) throw new Error("Raw gagal");
       const data=await resRaw.json();
-      handleUpdate(data,"CDN fallback");
+      if(JSON.stringify(data) === JSON.stringify(lastData)){
+        status.innerText="⏳ Menunggu update… (progress di CDN masih sama)";
+      } else {
+        lastData=data;
+        renderPreview(data);
+        status.innerText="✅ Data baru berhasil di-load (CDN fallback)";
+        const preview=document.getElementById("preview");
+        preview.style.background="#d4edda";
+        setTimeout(()=>{preview.style.background="#fff";},500);
+        secondsSinceRefresh=0;
+      }
     }catch(err2){
-      document.getElementById("status").innerText="❌ Gagal fetch data: "+err2.message;
+      status.innerText="❌ Gagal fetch data: "+err2.message;
     }
   }
 }
 
-// handle update
-function handleUpdate(data,source){
-  if(JSON.stringify(data)!==JSON.stringify(lastData)){
-    lastData=data;
-    renderPreview(data);
-    document.getElementById("status").innerText=`✅ Data terbaru (${source})`;
-    secondsSinceRefresh=0;
-    const preview=document.getElementById("preview");
-    preview.style.background="#d4edda";
-    setTimeout(()=>{preview.style.background="#fff";},500);
-  } else {
-    document.getElementById("status").innerText=`ℹ️ Data sama (${source})`;
-  }
-}
-
-// timer countdown since last refresh
+// Countdown timer since last refresh
 setInterval(()=>{
   secondsSinceRefresh++;
   document.getElementById("timer").innerText=`⏳ Terakhir refresh: ${secondsSinceRefresh} detik`;
 },1000);
 
-// tombol manual refresh
+// Manual refresh button
 document.getElementById("refreshBtn").addEventListener("click",fetchData);
 
-// load pertama kali
+// Load pertama kali
 fetchData();
 </script>
 </body>
