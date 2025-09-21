@@ -1,21 +1,42 @@
 {
   "pair": "XAU/USD",
-  "spot": "3688.25",
-  "validUntil": "2025-09-21T17:00:00",
-  "bias": "Bullish (hati-hati di resistance 3705-3710)",
-  "emaAlignment": "EMA 9 > 21 > 55 → tren naik kuat",
+  "spot": "3695.50",
+  "validUntil": "2025-09-21T18:00:00",
+  "bias": "Bullish ringan",
+  "emaAlignment": "EMA 9 > 21 > 55 → tren naik moderat",
   "levels": {
-    "supportIntraday": "3650-3665",
-    "supportKritis": "3620-3635",
-    "resistanceIntraday": "3685-3705",
-    "resistanceKuat": "3730-3750"
+    "supportIntraday": "3660-3675",
+    "supportKritis": "3630-3645",
+    "resistanceIntraday": "3700-3720",
+    "resistanceKuat": "3740-3755"
   },
   "quickTrade": {
-    "long": {"trigger":">3685","entry":"3690-3700","tp":"3730-3750","sl":"<3630"},
-    "short": {"trigger":"Rejection 3705-3710 / break <3630","entry":"~3630","tp":"3600-3615","sl":">3730"},
-    "sideways": {"range":"3630-3700","strategy":"Buy near support, Sell near resistance, TP seberang range, SL ±10-20 pip"}
+    "long": {
+      "trigger": ">3700",
+      "entry": "3705-3715",
+      "tp": "3740-3755",
+      "sl": "<3660"
+    },
+    "short": {
+      "trigger": "Rejection 3720 / break <3660",
+      "entry": "~3660",
+      "tp": "3630-3645",
+      "sl": ">3755"
+    },
+    "sideways": {
+      "range": "3660-3720",
+      "strategy": "Buy near support, Sell near resistance, TP seberang range, SL ±10-20 pip"
+    }
   },
-  "risk": "R:R minimal 1:2-1:3, hindari news besar, gunakan ATR H1",
-  "fundamental": {"sentiment":"Positif, didukung data inflasi melemah","risk":"Geopolitik & data NFP minggu ini","projection":"Potensi uji 3750 sebelum retrace"},
-  "conclusion": {"bias":"Bullish","strategy":"Buy on dip dekat support, TP di resistance","notes":"Hindari entry saat news high impact"}
+  "risk": "R:R minimal 1:2, hindari news high impact",
+  "fundamental": {
+    "sentiment": "Netral positif",
+    "risk": "Geopolitik & data NFP minggu ini",
+    "projection": "Potensi uji 3755"
+  },
+  "conclusion": {
+    "bias": "Bullish ringan",
+    "strategy": "Buy on dip",
+    "notes": "Hindari entry saat news high impact"
+  }
 }
