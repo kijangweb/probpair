@@ -28,69 +28,76 @@ tr:hover{background-color:#f1f1f1;}
 <div id="preview"></div>
 
 <script>
-const REPO_OWNER = "kijangweb";
-const REPO_NAME = "probpair";
-const FILE_PATH = "tradeData.json";
-const RAW_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${FILE_PATH}`;
-const COMMITS_API = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits?path=${FILE_PATH}&per_page=1`;
-
+const PROXY_URL = "http://localhost:3000/api/tradeData"; // server proxy
+const RAW_URL = "https://raw.githubusercontent.com/kijangweb/probpair/main/tradeData.json"; // fallback
 let lastSHA = null;
 
-// Render tabel preview
+// render tabel
 function renderPreview(data){
-  const container=document.getElementById("preview");
+  const container = document.getElementById("preview");
   if(!Array.isArray(data)||data.length===0){container.innerHTML="<p>Data kosong</p>";return;}
-  const keys=Object.keys(data[0]);
+  const keys = Object.keys(data[0]);
   let html=`<table><thead><tr>`;
   keys.forEach(k=>html+=`<th>${k}</th>`); html+=`</tr></thead><tbody id="tableBody"></tbody></table>`;
-  container.innerHTML=html;
+  container.innerHTML = html;
 
-  const renderRows=rows=>{
-    const body=document.getElementById("tableBody"); body.innerHTML="";
+  const renderRows = rows => {
+    const body = document.getElementById("tableBody"); body.innerHTML="";
     rows.forEach(row=>{let tr="<tr>"; keys.forEach(k=>tr+=`<td>${row[k]}</td>`); tr+="</tr>"; body.innerHTML+=tr;});
   }
   renderRows(data);
 
   document.getElementById("search").addEventListener("input", e=>{
-    const q=e.target.value.toLowerCase();
-    const filtered=data.filter(obj=>Object.values(obj).some(val=>String(val).toLowerCase().includes(q)));
+    const q = e.target.value.toLowerCase();
+    const filtered = data.filter(obj=>Object.values(obj).some(val=>String(val).toLowerCase().includes(q)));
     renderRows(filtered);
   });
 }
 
-// Fetch JSON + last commit info
+// fetch data (proxy + fallback)
 async function fetchData(){
-  const status=document.getElementById("status");
-  status.innerText="⏳ Memeriksa update…";
-  try{
-    const commitRes = await fetch(COMMITS_API);
-    if(!commitRes.ok) throw new Error("Gagal fetch commit info");
-    const commitJson = await commitRes.json();
-    const commitSHA = commitJson[0].sha;
-    const commitDate = new Date(commitJson[0].commit.author.date).toLocaleString();
+  const status = document.getElementById("status");
+  status.innerText = "⏳ Memeriksa update…";
 
-    if(commitSHA === lastSHA){
-      status.innerText=`⏳ Data sama (last repo update: ${commitDate})`;
+  try{
+    let res = await fetch(PROXY_URL);
+    if(!res.ok) throw new Error("Proxy gagal");
+    let json = await res.json();
+
+    if(json.commitSHA === lastSHA){
+      status.innerText = `⏳ Data sama (last update: ${json.commitDate})`;
       return;
     }
-    lastSHA = commitSHA;
 
-    const res = await fetch(RAW_URL + "?t=" + Date.now());
-    if(!res.ok) throw new Error("Gagal fetch JSON");
-    const data = await res.json();
+    lastSHA = json.commitSHA;
+    renderPreview(json.content);
 
-    renderPreview(data);
     const preview = document.getElementById("preview");
     preview.classList.add("flash");
     setTimeout(()=>preview.classList.remove("flash"),500);
 
-    status.innerText=`✅ Data baru dimuat (last repo update: ${commitDate})`;
-  }catch(err){
-    status.innerText="❌ Error: "+err.message;
+    status.innerText = `✅ Data baru dimuat (last update: ${json.commitDate})`;
+  }catch(e){
+    console.warn("Proxy gagal, fallback raw URL:", e.message);
+    try{
+      let res = await fetch(RAW_URL + "?t=" + Date.now());
+      if(!res.ok) throw new Error("Raw URL gagal");
+      let data = await res.json();
+      renderPreview(data);
+      status.innerText = "⚠️ Proxy gagal, menampilkan data dari raw URL (tidak ada timestamp)";
+    }catch(err){
+      status.innerText = "❌ Tidak bisa fetch data: "+err.message;
+    }
   }
 }
 
-document.getElementById("refreshBtn").addEventListener("click",fetchData);
+// tombol refresh manual
+document.getElementById("refreshBtn").addEventListener("click", fetchData);
+
+// auto refresh tiap 30 detik
+setInterval(fetchData, 30000);
+
+// load awal
 fetchData();
 </script>
 
