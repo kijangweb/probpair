@@ -1,49 +1,25 @@
+
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Trade Data</title>
-<style>
-  body { font-family: Arial, sans-serif; padding: 20px; }
-  table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-  th { background-color: #f0f0f0; }
-  tr:nth-child(even) { background-color: #fafafa; }
-  h1 { color: #333; }
-</style>
-</head>
+<head><meta charset="UTF-8"><title>Trade Data</title></head>
 <body>
-
 <h1>Trade Data</h1>
-<div id="tableContainer">Loading data...</div>
-
-<script>
-// JSON terbaru akan di-generate dari script lokal saat update
-const tradeData = {
-  "example": "data",
-  "anotherKey": "value",
-  "price": 100,
-  "volume": 50
-};
-
-// Fungsi untuk render JSON ke tabel
-function renderTable(jsonData) {
-  const container = document.getElementById('tableContainer');
-  const keys = Object.keys(jsonData);
-  const values = Object.values(jsonData);
-
-  let html = '<table><thead><tr>';
-  keys.forEach(key => { html += `<th>${key}</th>`; });
-  html += '</tr></thead><tbody><tr>';
-  values.forEach(val => { html += `<td>${val}</td>`; });
-  html += '</tr></tbody></table>';
-
-  container.innerHTML = html;
-}
-
-// Render table saat halaman dibuka
-renderTable(tradeData);
-</script>
-
+<pre>[
+  {
+    "item": "Apple",
+    "price": 100,
+    "volume": 50
+  },
+  {
+    "item": "Banana",
+    "price": 50,
+    "volume": 30
+  },
+  {
+    "item": "Cherry",
+    "price": 200,
+    "volume": 20
+  }
+]</pre>
 </body>
 </html>
