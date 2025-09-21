@@ -1,59 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Update TradeData</title>
-</head>
+<head><meta charset="UTF-8"><title>Trade Data</title></head>
 <body>
-<h1>Update Trade Data (Lokal)</h1>
-<textarea id="jsonInput" rows="10" cols="50">{"example": "data"}</textarea><br>
-<button id="updateBtn">Update Repo</button>
-<h2>Preview JSON</h2>
-<pre id="preview"></pre>
-
-<script>
-const OWNER = "kijangweb";
-const REPO = "probpair";
-const BRANCH = "main";
-const JSON_FILE = "tradeData.json";
-const HTML_FILE = "index.html";
-
-const jsonInput = document.getElementById("jsonInput");
-const preview = document.getElementById("preview");
-
-// Preview JSON langsung
-jsonInput.addEventListener("input", () => {
-  try { preview.textContent = JSON.stringify(JSON.parse(jsonInput.value), null, 2); }
-  catch { preview.textContent = "JSON invalid!"; }
-});
-
-// Tombol update
-document.getElementById("updateBtn").addEventListener("click", async () => {
-  const token = prompt("Masukkan GitHub Token (lokal & aman):");
-  if(!token) return alert("Token dibutuhkan!");
-
-  let jsonContent;
-  try { jsonContent = JSON.stringify(JSON.parse(jsonInput.value), null, 2); }
-  catch { return alert("JSON invalid!"); }
-
-  async function updateFile(filePath, msg, content) {
-    const getResp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${filePath}?ref=${BRANCH}`, {
-      headers: { Authorization: `token ${token}` }
-    });
-    const sha = (await getResp.json()).sha;
-    await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${filePath}`, {
-      method: "PUT",
-      headers: { Authorization: `token ${token}` },
-      body: JSON.stringify({ message: msg, content: btoa(content), branch: BRANCH, sha })
-    });
-  }
-
-  await updateFile(JSON_FILE, "Update tradeData.json via local HTML", jsonContent);
-  const htmlContent = `<pre>${jsonContent}</pre>`;
-  await updateFile(HTML_FILE, "Update index.html from JSON", htmlContent);
-
-  alert("JSON & HTML berhasil diupdate di repo!");
-});
-</script>
+<h1>Trade Data</h1>
+<pre>{
+  "example": "data"
+}</pre>
 </body>
 </html>
