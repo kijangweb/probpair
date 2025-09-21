@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Trade Data Viewer</title>
+  <title>📊 Trade Data Viewer</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
     h1 { margin-bottom: 10px; }
@@ -16,25 +19,33 @@
     #refreshBtn { padding: 10px 15px; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
     #refreshBtn:hover { opacity: 0.9; }
     #search { margin-top: 10px; padding: 8px; width: 50%; }
+    #lastUpdate { font-size: 0.9em; color: #555; margin-top: 8px; }
   </style>
 </head>
 <body>
   <h1>📊 Trade Data Viewer</h1>
-  <div id="status">Memuat data...</div>
+  <div id="status">⏳ Memuat data...</div>
   <button id="refreshBtn">🔄 Refresh Data</button>
   <input type="text" id="search" placeholder="Ketik untuk mencari...">
+  <div id="lastUpdate"></div>
   <div id="preview"></div>
 
   <script>
     const FILE_URL = "https://raw.githubusercontent.com/kijangweb/probpair/main/tradeData.json";
 
-    async function loadData() {
+    async function loadData(manual=false) {
       try {
-        const res = await fetch(FILE_URL + "?t=" + Date.now()); // bypass cache
-        if (!res.ok) throw new Error("Gagal fetch data");
+        const res = await fetch(FILE_URL + "?t=" + Date.now(), {
+          cache: "no-store"
+        });
+        if (!res.ok) throw new Error("Gagal fetch data: " + res.status);
+
         const data = await res.json();
         renderPreview(data);
+
+        const now = new Date().toLocaleTimeString();
         document.getElementById("status").innerText = "✅ Data berhasil dimuat.";
+        document.getElementById("lastUpdate").innerText = `Terakhir update: ${now}${manual ? " (manual)" : ""}`;
       } catch (err) {
         document.getElementById("status").innerText = "❌ Error: " + err.message;
       }
@@ -48,13 +59,8 @@
       }
 
       const keys = Object.keys(data[0]);
-      let html = `
-        <table>
-          <thead><tr>
-      `;
-      keys.forEach(k => {
-        html += `<th>${k}</th>`;
-      });
+      let html = `<table><thead><tr>`;
+      keys.forEach(k => html += `<th>${k}</th>`);
       html += `</tr></thead><tbody id="tableBody"></tbody></table>`;
       container.innerHTML = html;
 
@@ -63,9 +69,7 @@
         body.innerHTML = "";
         rows.forEach(row => {
           let tr = "<tr>";
-          keys.forEach(k => {
-            tr += `<td>${row[k]}</td>`;
-          });
+          keys.forEach(k => tr += `<td>${row[k]}</td>`);
           tr += "</tr>";
           body.innerHTML += tr;
         });
@@ -74,7 +78,7 @@
       renderRows(data);
 
       // search filter
-      document.getElementById("search").addEventListener("input", e => {
+      document.getElementById("search").oninput = e => {
         const q = e.target.value.toLowerCase();
         const filtered = data.filter(obj =>
           Object.values(obj).some(val =>
@@ -82,13 +86,17 @@
           )
         );
         renderRows(filtered);
-      });
+      };
     }
 
-    document.getElementById("refreshBtn").addEventListener("click", loadData);
+    // tombol manual
+    document.getElementById("refreshBtn").addEventListener("click", () => loadData(true));
 
     // load awal
     loadData();
+
+    // auto refresh tiap 15 detik
+    setInterval(loadData, 15000);
   </script>
 </body>
 </html>
