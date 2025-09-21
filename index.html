@@ -1,10 +1,22 @@
 
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>Trade Data</title></head>
+<head>
+<meta charset="UTF-8">
+<title>Trade Data</title>
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; }
+table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+th { background-color: #f0f0f0; }
+tr:nth-child(even) { background-color: #fafafa; }
+</style>
+</head>
 <body>
 <h1>Trade Data</h1>
-<pre>[
+<div id="tableContainer"></div>
+<script>
+const tradeData = [
   {
     "item": "Apple",
     "price": 100,
@@ -14,12 +26,23 @@
     "item": "Banana",
     "price": 50,
     "volume": 30
-  },
-  {
-    "item": "Cherry",
-    "price": 200,
-    "volume": 20
   }
-]</pre>
+];
+function renderTable(jsonArray) {
+  const container = document.getElementById('tableContainer');
+  if (!Array.isArray(jsonArray) || jsonArray.length === 0) { container.innerHTML = "<p>Data kosong</p>"; return; }
+  const keys = Object.keys(jsonArray[0]);
+  let html = '<table><thead><tr>';
+  keys.forEach(key => { html += '<th>' + key + '</th>'; });
+  html += '</tr></thead><tbody>';
+  jsonArray.forEach(obj => {
+    html += '<tr>'; keys.forEach(key => { html += '<td>' + (obj[key] !== undefined ? obj[key] : '') + '</td>'; });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+renderTable(tradeData);
+</script>
 </body>
 </html>
