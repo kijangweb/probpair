@@ -1,19 +1,18 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Trade Data</title>
-<style>
-body { font-family: Arial, sans-serif; padding: 20px; background: #fafafa; }
-h1 { margin-bottom: 10px; }
-input { padding: 6px; width: 220px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
-table { border-collapse: collapse; width: 100%; margin-top: 10px; background: #fff; }
-th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-th { background-color: #f0f0f0; cursor: pointer; }
-tr:nth-child(even) { background-color: #f9f9f9; }
-tr:hover { background-color: #f1f1f1; }
-</style>
+  <meta charset="UTF-8">
+  <title>Trade Data</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #fafafa; }
+    h1 { margin-bottom: 10px; }
+    input { padding: 6px; width: 220px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; background: #fff; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f0f0f0; cursor: pointer; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    tr:hover { background-color: #f1f1f1; }
+  </style>
 </head>
 <body>
 
@@ -24,84 +23,82 @@ tr:hover { background-color: #f1f1f1; }
 <div id="tableContainer"></div>
 
 <script>
-const tradeData = [
-  {
-    "item": "Apple",
-    "price": 100,
-    "volume": 50
-  },
-  {
-    "item": "Banana",
-    "price": 50,
-    "volume": 30
-  },
-  {
-    "item": "Orange",
-    "price": 70,
-    "volume": 140
+const repoOwner = "kijangweb";
+const repoName = "probpair";
+const branch = "main";
+const filePath = "tradeData.json";
+
+async function loadData() {
+  try {
+    const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`;
+    const res = await fetch(url);
+    const tradeData = await res.json();
+    renderTable(tradeData);
+
+    document.getElementById("searchInput").addEventListener("input", e => {
+      const q = e.target.value.toLowerCase();
+      const filtered = tradeData.filter(obj =>
+        Object.values(obj).some(val =>
+          String(val).toLowerCase().includes(q)
+        )
+      );
+      renderTable(filtered);
+    });
+  } catch (err) {
+    document.getElementById("tableContainer").innerHTML = "<p>Gagal memuat data: " + err.message + "</p>";
   }
-];
+}
+
 let currentSortKey = null;
 let sortAsc = true;
 
 function renderTable(data) {
-  const container = document.getElementById('tableContainer');
+  const container = document.getElementById("tableContainer");
   if (!Array.isArray(data) || data.length === 0) {
     container.innerHTML = "<p>Data kosong</p>";
     return;
   }
 
   const keys = Object.keys(data[0]);
-  let html = '<table><thead><tr>';
+  let html = "<table><thead><tr>";
   keys.forEach(key => {
     html += `<th onclick="sortTable('${key}')">${key}</th>`;
   });
-  html += '</tr></thead><tbody>';
+  html += "</tr></thead><tbody>";
 
   data.forEach(obj => {
-    html += '<tr>';
+    html += "<tr>";
     keys.forEach(key => {
-      html += `<td>${obj[key] !== undefined ? obj[key] : ''}</td>`;
+      html += `<td>${obj[key] !== undefined ? obj[key] : ""}</td>`;
     });
-    html += '</tr>';
+    html += "</tr>";
   });
 
-  html += '</tbody></table>';
+  html += "</tbody></table>";
   container.innerHTML = html;
 }
 
 function sortTable(key) {
-  if (currentSortKey === key) {
-    sortAsc = !sortAsc;
-  } else {
-    currentSortKey = key;
-    sortAsc = true;
-  }
+  const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}`;
+  fetch(url).then(r => r.json()).then(tradeData => {
+    if (currentSortKey === key) {
+      sortAsc = !sortAsc;
+    } else {
+      currentSortKey = key;
+      sortAsc = true;
+    }
 
-  tradeData.sort((a, b) => {
-    if (a[key] < b[key]) return sortAsc ? -1 : 1;
-    if (a[key] > b[key]) return sortAsc ? 1 : -1;
-    return 0;
+    tradeData.sort((a, b) => {
+      if (a[key] < b[key]) return sortAsc ? -1 : 1;
+      if (a[key] > b[key]) return sortAsc ? 1 : -1;
+      return 0;
+    });
+
+    renderTable(tradeData);
   });
-
-  renderTable(filteredData());
 }
 
-function filteredData() {
-  const query = document.getElementById('searchInput').value.toLowerCase();
-  if (!query) return tradeData;
-  return tradeData.filter(obj =>
-    Object.values(obj).some(val =>
-      String(val).toLowerCase().includes(query)
-    )
-  );
-}
-
-document.getElementById('searchInput').addEventListener('input', () => {
-  renderTable(filteredData());
-});
-
-renderTable(tradeData);
+loadData();
 </script>
 </body>
 </html>
