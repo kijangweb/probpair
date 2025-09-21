@@ -1,71 +1,97 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Trade Data</title>
 <style>
-body { font-family: Arial, sans-serif; padding: 20px; }
-table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-th, td { border: 1px solid #ccc; padding: 8px; text-align: left; cursor: pointer; }
-th { background-color: #f0f0f0; }
-tr:nth-child(even) { background-color: #fafafa; }
-input { padding: 5px; width: 200px; margin-top: 10px; }
+body { font-family: Arial, sans-serif; padding: 20px; background: #fafafa; }
+h1 { margin-bottom: 10px; }
+input { padding: 6px; width: 220px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; margin-top: 10px; background: #fff; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+th { background-color: #f0f0f0; cursor: pointer; }
+tr:nth-child(even) { background-color: #f9f9f9; }
+tr:hover { background-color: #f1f1f1; }
 </style>
 </head>
 <body>
+
 <h1>Trade Data</h1>
 <label for="searchInput">Filter:</label>
-<input type="text" id="searchInput" placeholder="Cari...">
+<input type="text" id="searchInput" placeholder="Ketik untuk mencari...">
+
 <div id="tableContainer"></div>
+
 <script>
-let tradeData = [
-  {
-    "item": "Apple",
-    "price": 100,
-    "volume": 50
-  },
-  {
-    "item": "paapya",
-    "price": 100,
-    "volume": 50
-  },
-  {
-    "item": "Banana",
-    "price": 50,
-    "volume": 30
-  }
+// JSON ini akan otomatis digenerate ulang dari lokal
+const tradeData = [
+  {"item": "Apple", "price": 100, "volume": 50},
+  {"item": "Banana", "price": 50, "volume": 30}
 ];
+
 let currentSortKey = null;
 let sortAsc = true;
 
 function renderTable(data) {
   const container = document.getElementById('tableContainer');
-  if(!Array.isArray(data)||data.length===0){container.innerHTML="<p>Data kosong</p>";return;}
+  if (!Array.isArray(data) || data.length === 0) {
+    container.innerHTML = "<p>Data kosong</p>";
+    return;
+  }
+
   const keys = Object.keys(data[0]);
-  let html='<table><thead><tr>';
-  keys.forEach(key=>{html+='<th onclick="sortTable(''+key+'')">'+key+'</th>';});
-  html+='</tr></thead><tbody>';
-  data.forEach(obj=>{html+='<tr>';keys.forEach(key=>{html+='<td>'+(obj[key]!==undefined?obj[key]:'')+'</td>';});html+='</tr>';});
-  html+='</tbody></table>';
-  container.innerHTML=html;
+  let html = '<table><thead><tr>';
+  keys.forEach(key => {
+    html += `<th onclick="sortTable('${key}')">${key}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  data.forEach(obj => {
+    html += '<tr>';
+    keys.forEach(key => {
+      html += `<td>${obj[key] !== undefined ? obj[key] : ''}</td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
 }
 
-function sortTable(key){
-  if(currentSortKey===key) sortAsc=!sortAsc; else {currentSortKey=key;sortAsc=true;}
-  tradeData.sort((a,b)=>{if(a[key]<b[key])return sortAsc?-1:1;if(a[key]>b[key])return sortAsc?1:-1;return 0;});
+function sortTable(key) {
+  if (currentSortKey === key) {
+    sortAsc = !sortAsc;
+  } else {
+    currentSortKey = key;
+    sortAsc = true;
+  }
+
+  tradeData.sort((a, b) => {
+    if (a[key] < b[key]) return sortAsc ? -1 : 1;
+    if (a[key] > b[key]) return sortAsc ? 1 : -1;
+    return 0;
+  });
+
   renderTable(filteredData());
 }
 
-function filteredData(){
-  const query=document.getElementById('searchInput').value.toLowerCase();
-  if(!query) return tradeData;
-  return tradeData.filter(obj=>Object.values(obj).some(val=>String(val).toLowerCase().includes(query)));
+function filteredData() {
+  const query = document.getElementById('searchInput').value.toLowerCase();
+  if (!query) return tradeData;
+  return tradeData.filter(obj =>
+    Object.values(obj).some(val =>
+      String(val).toLowerCase().includes(query)
+    )
+  );
 }
 
-document.getElementById('searchInput').addEventListener('input',()=>renderTable(filteredData()));
+document.getElementById('searchInput').addEventListener('input', () => {
+  renderTable(filteredData());
+});
 
+// Render awal
 renderTable(tradeData);
 </script>
+
 </body>
 </html>
