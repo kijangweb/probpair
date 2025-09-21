@@ -2,28 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Trade Data</title>
+  <title>Trade Data Viewer</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background: #fafafa; }
     h1 { margin-bottom: 10px; }
-    button { padding: 8px 12px; margin-bottom: 10px; border: none; border-radius: 4px; cursor: pointer; background: #007bff; color: #fff; }
+    button { padding: 8px 12px; margin-bottom: 10px; border: none; border-radius: 6px; cursor: pointer; background: #007bff; color: #fff; font-size: 14px; }
     button:hover { background: #0056b3; }
-    input { padding: 6px; width: 220px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 10px; background: #fff; }
+    input { padding: 6px; width: 220px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
     th { background-color: #f0f0f0; cursor: pointer; }
     tr:nth-child(even) { background-color: #f9f9f9; }
     tr:hover { background-color: #f1f1f1; }
+    #status { font-size: 13px; color: #555; margin-top: 5px; }
   </style>
 </head>
 <body>
 
-<h1>Trade Data</h1>
+<h1>📊 Trade Data</h1>
 <button id="updateBtn">🔄 Update Data</button>
 <br>
 <label for="searchInput">Filter:</label>
 <input type="text" id="searchInput" placeholder="Ketik untuk mencari...">
-
+<div id="status"></div>
 <div id="tableContainer"></div>
 
 <script>
@@ -36,15 +37,17 @@ let tradeData = [];
 let currentSortKey = null;
 let sortAsc = true;
 
-// fetch JSON dari repo (anti-cache dengan timestamp)
-async function loadData() {
+// fetch JSON dari repo (pakai timestamp biar anti-cache)
+async function loadData(showStatus = true) {
   try {
     const url = `https://raw.githubusercontent.com/${repoOwner}/${repoName}/${branch}/${filePath}?t=${Date.now()}`;
     const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     tradeData = await res.json();
     renderTable(tradeData);
+    if (showStatus) updateStatus("✅ Data terbaru berhasil dimuat");
   } catch (err) {
-    document.getElementById("tableContainer").innerHTML = "<p>⚠️ Gagal memuat data: " + err.message + "</p>";
+    updateStatus("⚠️ Gagal memuat data: " + err.message, true);
   }
 }
 
@@ -104,11 +107,18 @@ document.getElementById("searchInput").addEventListener("input", e => {
   renderTable(filtered);
 });
 
-// update button
-document.getElementById("updateBtn").addEventListener("click", loadData);
+// status update
+function updateStatus(msg, isError = false) {
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.style.color = isError ? "red" : "#555";
+}
 
-// load pertama kali
-loadData();
+// update button
+document.getElementById("updateBtn").addEventListener("click", () => loadData(true));
+
+// load pertama kali (tanpa pesan status)
+loadData(false);
 </script>
 </body>
 </html>
