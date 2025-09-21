@@ -19,15 +19,15 @@ tr:hover{background-color:#f1f1f1;}
 </style>
 </head>
 <body>
+
 <h1>📊 Trade Data Viewer</h1>
-<div id="status">Menunggu refresh...</div>
+<div id="status">Memuat data...</div>
 <button id="refreshBtn">🔄 Refresh Data</button>
 <input type="text" id="search" placeholder="Ketik untuk mencari...">
 <div id="preview"></div>
 
-<script src="config.js"></script>
 <script>
-let lastData = null;
+const FILE_URL = "https://raw.githubusercontent.com/kijangweb/probpair/main/tradeData.json";
 let lastSHA = null;
 
 // Render tabel preview
@@ -52,33 +52,16 @@ function renderPreview(data){
   });
 }
 
-// Fetch data authenticated + show last commit timestamp
+// Fetch data dari repo
 async function fetchData(){
   const status=document.getElementById("status");
   status.innerText="⏳ Memeriksa update…";
   try{
-    const res=await fetch(`https://api.github.com/repos/${CONFIG.REPO_OWNER}/${CONFIG.REPO_NAME}/contents/${CONFIG.FILE_PATH}?ref=${CONFIG.BRANCH}&t=${Date.now()}`,{
-      headers:{
-        "Authorization": `token ${CONFIG.GITHUB_TOKEN}`,
-        "Accept": "application/vnd.github.v3+json"
-      }
-    });
-    const json=await res.json();
-    const data=JSON.parse(atob(json.content));
-    const sha=json.sha;
-    const commitDate=json.commit ? new Date(json.commit.author.date).toLocaleString() : "-";
-
-    if(sha===lastSHA){
-      status.innerText=`⏳ Data sama (last update: ${commitDate})`;
-    } else {
-      lastSHA=sha;
-      lastData=data;
-      renderPreview(data);
-      status.innerText=`✅ Data baru berhasil di-load (last update: ${commitDate})`;
-      const preview=document.getElementById("preview");
-      preview.style.background="#d4edda";
-      setTimeout(()=>{preview.style.background="#fff";},500);
-    }
+    const res=await fetch(FILE_URL+"?t="+Date.now()); // bypass cache
+    if(!res.ok)throw new Error("Gagal fetch data");
+    const data=await res.json();
+    renderPreview(data);
+    status.innerText=`✅ Data berhasil dimuat (last update: ${new Date().toLocaleString()})`;
   }catch(err){
     status.innerText="❌ Gagal fetch data: "+err.message;
   }
