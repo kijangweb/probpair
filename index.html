@@ -1,119 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Trade Data Viewer with 30s Timer</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
-    h1 { margin-bottom: 10px; }
-    #status { margin-bottom: 15px; font-weight: bold; }
-    #preview { padding: 15px; background: #fff; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    table { border-collapse: collapse; width: 100%; margin-top: 10px; background: #fff; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-    th { background-color: #f0f0f0; }
-    tr:nth-child(even) { background-color: #f9f9f9; }
-    tr:hover { background-color: #f1f1f1; }
-    #refreshBtn { padding: 10px 15px; background: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-    #refreshBtn:hover { opacity: 0.9; }
-    #search { margin-top: 10px; padding: 8px; width: 50%; }
-    #timer { margin-top: 10px; font-size: 14px; color: #555; }
-  </style>
+<meta charset="UTF-8">
+<title>Trade Data Viewer</title>
+<style>
+body{font-family:Arial,sans-serif;padding:20px;background:#f4f4f4;}
+h1{margin-bottom:10px;}
+#status{margin-bottom:10px;font-weight:bold;}
+#preview{padding:15px;background:#fff;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,0.1);transition:background 0.3s;}
+table{border-collapse:collapse;width:100%;margin-top:10px;}
+th,td{border:1px solid #ddd;padding:8px;text-align:left;}
+th{background-color:#f0f0f0;}
+tr:nth-child(even){background-color:#f9f9f9;}
+tr:hover{background-color:#f1f1f1;}
+#search{margin-top:10px;padding:8px;width:50%;}
+#timer{margin-top:10px;font-size:14px;color:#555;}
+#refreshBtn{padding:10px 15px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer;}
+#refreshBtn:hover{opacity:0.9;}
+</style>
 </head>
 <body>
-  <h1>📊 Trade Data Viewer</h1>
-  <div id="status">Memuat data...</div>
-  <button id="refreshBtn">🔄 Refresh Data</button>
-  <input type="text" id="search" placeholder="Ketik untuk mencari...">
-  <div id="preview"></div>
-  <div id="timer">⏳ Menunggu update...</div>
+<h1>📊 Trade Data Viewer</h1>
+<div id="status">Memuat data...</div>
+<button id="refreshBtn">🔄 Refresh Data</button>
+<input type="text" id="search" placeholder="Ketik untuk mencari...">
+<div id="preview"></div>
+<div id="timer">⏳ Menunggu update...</div>
 
-  <script>
-    const FILE_URL = "https://raw.githubusercontent.com/kijangweb/probpair/main/tradeData.json";
-    let lastData = null;
-    let timerSec = 0;
-    const TIMER_MAX = 30; // loop tiap 30 detik
-    let timerInterval;
+<script>
+const REPO_OWNER="kijangweb",REPO_NAME="probpair",FILE_PATH="tradeData.json",BRANCH="main";
+const API_URL=`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BRANCH}`;
+const RAW_URL=`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}/${FILE_PATH}`;
 
-    async function loadData() {
-      try {
-        const res = await fetch(FILE_URL + "?t=" + Date.now());
-        if (!res.ok) throw new Error("Gagal fetch data");
-        const data = await res.json();
+let lastData=null,timerSec=0,TIMER_MAX=30;
 
-        if (JSON.stringify(data) !== JSON.stringify(lastData)) {
-          const delaySec = timerSec;
-          document.getElementById("status").innerText = `✅ Data baru terdeteksi setelah ${delaySec} detik`;
-          lastData = data;
-          renderPreview(data);
+function renderPreview(data){
+  const container=document.getElementById("preview");
+  if(!Array.isArray(data)||data.length===0){container.innerHTML="<p>Data kosong</p>";return;}
+  const keys=Object.keys(data[0]);
+  let html=`<table><thead><tr>`;
+  keys.forEach(k=>html+=`<th>${k}</th>`); html+=`</tr></thead><tbody id="tableBody"></tbody></table>`;
+  container.innerHTML=html;
+  const renderRows=rows=>{
+    const body=document.getElementById("tableBody"); body.innerHTML="";
+    rows.forEach(row=>{let tr="<tr>";keys.forEach(k=>tr+=`<td>${row[k]}</td>`);tr+="</tr>";body.innerHTML+=tr;});
+  }
+  renderRows(data);
+  document.getElementById("search").addEventListener("input",e=>{
+    const q=e.target.value.toLowerCase();
+    const filtered=data.filter(obj=>Object.values(obj).some(val=>String(val).toLowerCase().includes(q)));
+    renderRows(filtered);
+  });
+}
 
-          // reset timer
-          timerSec = 0;
-        }
-      } catch (err) {
-        document.getElementById("status").innerText = "❌ Error: " + err.message;
-      }
+async function loadData(){
+  try{
+    const res=await fetch(API_URL);
+    if(!res.ok)throw new Error("API gagal");
+    const json=await res.json();
+    const data=JSON.parse(atob(json.content));
+    handleUpdate(data,"API");
+  }catch(err){
+    console.warn("API error:",err.message);
+    try{
+      const resRaw=await fetch(RAW_URL+"?t="+Date.now());
+      if(!resRaw.ok)throw new Error("Raw fetch gagal");
+      const data=await resRaw.json();
+      handleUpdate(data,"CDN fallback");
+    }catch(err2){
+      document.getElementById("status").innerText="❌ Error total: "+err2.message;
     }
+  }
+}
 
-    function renderPreview(data) {
-      const container = document.getElementById("preview");
-      if (!Array.isArray(data) || data.length === 0) {
-        container.innerHTML = "<p>Data kosong</p>";
-        return;
-      }
-
-      const keys = Object.keys(data[0]);
-      let html = `
-        <table>
-          <thead><tr>
-      `;
-      keys.forEach(k => {
-        html += `<th>${k}</th>`;
-      });
-      html += `</tr></thead><tbody id="tableBody"></tbody></table>`;
-      container.innerHTML = html;
-
-      function renderRows(rows) {
-        const body = document.getElementById("tableBody");
-        body.innerHTML = "";
-        rows.forEach(row => {
-          let tr = "<tr>";
-          keys.forEach(k => {
-            tr += `<td>${row[k]}</td>`;
-          });
-          tr += "</tr>";
-          body.innerHTML += tr;
-        });
-      }
-
-      renderRows(data);
-
-      document.getElementById("search").addEventListener("input", e => {
-        const q = e.target.value.toLowerCase();
-        const filtered = data.filter(obj =>
-          Object.values(obj).some(val =>
-            String(val).toLowerCase().includes(q)
-          )
-        );
-        renderRows(filtered);
-      });
-    }
-
-    function startTimer() {
-      timerInterval = setInterval(() => {
-        timerSec++;
-        if (timerSec > TIMER_MAX) timerSec = 0; // loop setiap 30 detik
-        document.getElementById("timer").innerText = `⏳ Menunggu update... (${timerSec} detik)`;
-      }, 1000);
-    }
-
-    document.getElementById("refreshBtn").addEventListener("click", loadData);
-
-    // auto cek setiap 5 detik
-    setInterval(loadData, 5000);
-
-    // start
-    loadData();
-    startTimer();
-  </script>
-</body>
-</html>
+function handleUpdate(data,source){
+  if(JSON.stringify(data)!==JSON.stringify(lastData)){
+    const delaySec=timerSec;
+    lastData=data;
+    renderPreview(data);
+    const preview=document.getElementById("preview");
+    preview.style.background="#d4edda";
+    setTimeout(()=>{
