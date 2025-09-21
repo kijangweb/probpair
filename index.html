@@ -80,4 +80,18 @@ function handleUpdate(data,source){
     renderPreview(data);
     const preview=document.getElementById("preview");
     preview.style.background="#d4edda";
-    setTimeout(()=>{
+    setTimeout(()=>{preview.style.background="#fff";},500);
+    document.getElementById("status").innerText=`✅ Data baru (${source}) setelah ${delaySec} detik`;
+    timerSec=0;
+  }
+}
+
+function startTimer(){setInterval(()=>{timerSec++;if(timerSec>TIMER_MAX)timerSec=0;document.getElementById("timer").innerText=`⏳ Menunggu update... (${timerSec} detik)`;},1000);}
+
+document.getElementById("refreshBtn").addEventListener("click",loadData);
+setInterval(loadData,5000);
+loadData();
+startTimer();
+</script>
+</body>
+</html>
